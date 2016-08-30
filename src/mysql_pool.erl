@@ -18,6 +18,8 @@ start() ->
 stop() ->
     application:stop(mysql_pool).
 
+-spec(add_pool(PoolName::atom(), Size::integer(), ConnectionOptions::list()) -> {ok, Pid::pid()} | {error, Error::term()}).
+
 add_pool(PoolName, Size, ConnectionOptions) ->
 
     ok = mysql_connection_manager:create_pool(PoolName),
@@ -30,55 +32,81 @@ add_pool(PoolName, Size, ConnectionOptions) ->
 
     pooler:new_pool(PoolConfig).
 
+-spec(remove_pool(PoolName::atom()) -> ok | {error, Error::term()}).
+
 remove_pool(PoolName) ->
     true = mysql_connection_manager:dispose_pool(PoolName),
     pooler:rm_pool(PoolName).
 
+-spec(prepare(PoolName::atom(), Stm::atom(), Query::binary()) -> ok | {error, Error::term()}).
+
 prepare(PoolName, Stm, Query) ->
     case mysql_connection_manager:pool_add_stm(PoolName, Stm, Query) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:prepare(Pid, Stm, Query) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:prepare(Pid, Stm, Query) end),
+            ok;
         Error ->
             {error, Error}
     end.
+
+-spec(unprepare(PoolName::atom(), Stm::atom()) -> ok | {error, Error::term()}).
 
 unprepare(PoolName, Stm) ->
     case mysql_connection_manager:pool_remove_stm(PoolName, Stm) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:unprepare(Pid, Stm) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:unprepare(Pid, Stm) end),
+            ok;
         Error ->
             {error, Error}
     end.
 
+-spec(query(PoolName::atom(), Query::binary()) -> Result::term()).
+
 query(PoolName, Query) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
+
+-spec(query(PoolName::atom(), Query::binary(), Params::list()|integer()) -> Result::term()).
 
 query(PoolName, Query, Params) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params) end).
 
+-spec(query(PoolName::atom(), Query::binary(), Params::list(), Timeout::integer()) -> Result::term()).
+
 query(PoolName, Query, Params, Timeout) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end).
+
+-spec(execute(PoolName::atom(), StatementRef::atom(), Params::list()) -> Result::term()).
 
 execute(PoolName, StatementRef, Params) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params) end).
 
+-spec(execute(PoolName::atom(), StatementRef::atom(), Params::list(), Timeout::integer()) -> Result::term()).
+
 execute(PoolName, StatementRef, Params, Timeout) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end).
+
+-spec(transaction(PoolName::atom(), TransactionFun::fun()) -> Result::term()).
 
 transaction(PoolName, TransactionFun) when is_function(TransactionFun, 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn], infinity)
     end).
 
+-spec(transaction(PoolName::atom(), TransactionFun::fun(), Args::list()) -> Result::term()).
+
 transaction(PoolName, TransactionFun, Args) when is_function(TransactionFun, length(Args) + 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], infinity)
     end).
 
+-spec(transaction(PoolName::atom(), TransactionFun::fun(), Args::list(), Retries::integer()|infinity) -> Result::term()).
+
 transaction(PoolName, TransactionFun, Args, Retries) when is_function(TransactionFun, length(Args) + 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], Retries)
     end).
+
+-spec(with(PoolName::atom(), Fun::fun()) -> Result::term()).
 
 with(PoolName, Fun) when is_function(Fun, 1) ->
     pooler_transaction(PoolName, Fun).
