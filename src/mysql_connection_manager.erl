@@ -36,7 +36,7 @@ remove_connection(Pid) ->
 
 map_connections(PoolName, Fun) ->
     Pids = ets:select(?POOL_CONNECTIONS_TABLE, [{ {'$1', PoolName}, [], ['$1']}]),
-    lists:foreach(Fun, Pids).
+    plists:foreach(Fun, Pids, [{processes, schedulers}]).
 
 get_connection_pool(Pid) ->
     case catch ets:lookup(?POOL_CONNECTIONS_TABLE, Pid) of
