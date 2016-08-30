@@ -13,7 +13,7 @@
     start_link/0,
     add_connection/2,
     remove_connection/1,
-    map_connections/1,
+    map_connections/2,
     get_connection_pool/1,
     create_pool/1,
     dispose_pool/1,
@@ -34,8 +34,9 @@ add_connection(Pid, PoolName) ->
 remove_connection(Pid) ->
     gen_server:call(?MODULE, {remove_connection, Pid}).
 
-map_connections(Fun) ->
-    ets:foldl(fun({Pid, _}, _Acc) -> Fun(Pid) end, ok, ?POOL_CONNECTIONS_TABLE).
+map_connections(PoolName, Fun) ->
+    Pids = ets:select(?POOL_CONNECTIONS_TABLE, [{ {'$1', PoolName}, [], ['$1']}]),
+    lists:foreach(Fun, Pids).
 
 get_connection_pool(Pid) ->
     case catch ets:lookup(?POOL_CONNECTIONS_TABLE, Pid) of
