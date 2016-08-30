@@ -43,8 +43,12 @@ remove_pool(PoolName) ->
 prepare(PoolName, Stm, Query) ->
     case mysql_connection_manager:pool_add_stm(PoolName, Stm, Query) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:prepare(Pid, Stm, Query) end),
-            ok;
+            try
+                mysql_connection_manager:map_connections(fun(Pid) -> {ok, Stm} = mysql_connection:prepare(Pid, Stm, Query) end),
+                ok
+            catch _: Error ->
+                {error, Error}
+            end;
         Error ->
             {error, Error}
     end.
@@ -54,8 +58,12 @@ prepare(PoolName, Stm, Query) ->
 unprepare(PoolName, Stm) ->
     case mysql_connection_manager:pool_remove_stm(PoolName, Stm) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:unprepare(Pid, Stm) end),
-            ok;
+            try
+                mysql_connection_manager:map_connections(fun(Pid) -> ok = mysql_connection:unprepare(Pid, Stm) end),
+                ok
+            catch _: Error ->
+                {error, Error}
+            end;
         Error ->
             {error, Error}
     end.
