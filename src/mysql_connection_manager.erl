@@ -11,14 +11,16 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([
     start_link/0,
-    add_connection/1,
+    add_connection/2,
     remove_connection/1,
     map_connections/1,
+    get_connection_pool/1,
     create_pool/1,
     dispose_pool/1,
     pool_add_stm/3,
     pool_remove_stm/2,
-    pool_get_statements/1
+    pool_get_statements/1,
+    pool_get_statement/2
 ]).
 
 -record(state, {}).
@@ -26,14 +28,22 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-add_connection(Pid) ->
-    gen_server:call(?MODULE, {add_connection, Pid}).
+add_connection(Pid, PoolName) ->
+    gen_server:call(?MODULE, {add_connection, Pid, PoolName}).
 
 remove_connection(Pid) ->
     gen_server:call(?MODULE, {remove_connection, Pid}).
 
 map_connections(Fun) ->
     ets:foldl(fun({Pid, _}, _Acc) -> Fun(Pid) end, ok, ?POOL_CONNECTIONS_TABLE).
+
+get_connection_pool(Pid) ->
+    case catch ets:lookup(?POOL_CONNECTIONS_TABLE, Pid) of
+        [{Pid, Poolname}] ->
+            {ok, Poolname};
+        UnexpectedError ->
+            UnexpectedError
+    end.
 
 create_pool(PoolName) ->
     gen_server:call(?MODULE, {create_pool, PoolName}).
@@ -50,14 +60,17 @@ pool_remove_stm(PoolName, Stm) ->
 pool_get_statements(PoolName) ->
     ets_pool_to_list(PoolName).
 
+pool_get_statement(PoolName, Stm) ->
+    ets_pool_get_statement(PoolName, Stm).
+
 %gen_server callbacks
 
 init([]) ->
     ?POOL_CONNECTIONS_TABLE = ets:new(?POOL_CONNECTIONS_TABLE, [set, named_table, protected, {read_concurrency, true}]),
     {ok, #state{}}.
 
-handle_call({add_connection, Pid}, _From, State) ->
-    {reply, ets_add_connection(Pid), State};
+handle_call({add_connection, Pid, PoolName}, _From, State) ->
+    {reply, ets_add_connection(Pid, PoolName), State};
 handle_call({remove_connection, Pid}, _From, State) ->
     {reply, ets_remove_connection(Pid), State};
 handle_call({create_pool, PoolName}, _From, State) ->
@@ -81,8 +94,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 %internal methods
 
-ets_add_connection(Pid) ->
-    case catch ets:insert(?POOL_CONNECTIONS_TABLE, {Pid, true}) of
+ets_add_connection(Pid, PoolName) ->
+    case catch ets:insert(?POOL_CONNECTIONS_TABLE, {Pid, PoolName}) of
         true ->
             ok;
         Error ->
@@ -113,3 +126,11 @@ ets_pool_del(PoolName, StmName) ->
 
 ets_pool_to_list(PoolName) ->
     ets:tab2list(PoolName).
+
+ets_pool_get_statement(PoolName, Stm) ->
+    case ets:lookup(PoolName, Stm) of
+        [{Stm, Query}] ->
+            {ok, Stm, Query};
+        _ ->
+            null
+    end.

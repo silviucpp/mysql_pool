@@ -36,7 +36,7 @@ remove_pool(PoolName) ->
 prepare(PoolName, Stm, Query) ->
     case mysql_connection_manager:pool_add_stm(PoolName, Stm, Query) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql:prepare(Pid, Stm, Query) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:prepare(Pid, Stm, Query) end);
         Error ->
             {error, Error}
     end.
@@ -44,39 +44,39 @@ prepare(PoolName, Stm, Query) ->
 unprepare(PoolName, Stm) ->
     case mysql_connection_manager:pool_remove_stm(PoolName, Stm) of
         true ->
-            mysql_connection_manager:map_connections(fun(Pid) -> mysql:unprepare(Pid, Stm) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql_connection:unprepare(Pid, Stm) end);
         Error ->
             {error, Error}
     end.
 
 query(PoolName, Query) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql:query(MysqlConn, Query) end).
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
 
 query(PoolName, Query, Params) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql:query(MysqlConn, Query, Params) end).
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params) end).
 
 query(PoolName, Query, Params, Timeout) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql:query(MysqlConn, Query, Params, Timeout) end).
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end).
 
 execute(PoolName, StatementRef, Params) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql:execute(MysqlConn, StatementRef, Params) end).
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params) end).
 
 execute(PoolName, StatementRef, Params, Timeout) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql:execute(MysqlConn, StatementRef, Params, Timeout) end).
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end).
 
 transaction(PoolName, TransactionFun) when is_function(TransactionFun, 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
-        mysql:transaction(MysqlConn, TransactionFun, [MysqlConn], infinity)
+        mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn], infinity)
     end).
 
 transaction(PoolName, TransactionFun, Args) when is_function(TransactionFun, length(Args) + 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
-        mysql:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], infinity)
+        mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], infinity)
     end).
 
 transaction(PoolName, TransactionFun, Args, Retries) when is_function(TransactionFun, length(Args) + 1) ->
     pooler_transaction(PoolName, fun(MysqlConn) ->
-        mysql:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], Retries)
+        mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], Retries)
     end).
 
 with(PoolName, Fun) when is_function(Fun, 1) ->
