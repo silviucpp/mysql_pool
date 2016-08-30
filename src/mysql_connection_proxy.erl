@@ -16,7 +16,15 @@ get_pid(ProxyPid) ->
 
 init([PoolName, Args]) ->
     process_flag(trap_exit, true),
-    {ok, #state{connection_args = Args, pool_name = PoolName}}.
+
+    ConnectionPid = case get_connection(PoolName, Args) of
+        {ok, NewPid} ->
+            NewPid;
+        _ ->
+            undefined
+    end,
+
+    {ok, #state{connection_args = Args, pool_name = PoolName, connection_pid = ConnectionPid}}.
 
 handle_call(get_connection_pid, _From, State=#state{connection_pid =Pid}) ->
     case Pid of
