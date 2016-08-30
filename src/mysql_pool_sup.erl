@@ -9,8 +9,8 @@ start_link() ->
 
 init([]) ->
     Childrens = [
-        supervisor(pooler_sup, infinity),
-        worker(mysql_connection_manager, infinity)
+        worker(mysql_connection_manager, infinity),
+        supervisor(pooler_sup, infinity)
     ],
 
     {ok, {{one_for_one, 10, 10}, Childrens}}.
