@@ -19,7 +19,7 @@ stop() ->
 
 add_pool(PoolName, Size, ConnectionOptions) ->
 
-    ok = mysql_prepared_stm_utils:create(PoolName),
+    ok = mysql_connection_manager:create_pool(PoolName),
 
     PoolConfig = [
         {name, PoolName},
@@ -30,21 +30,21 @@ add_pool(PoolName, Size, ConnectionOptions) ->
     pooler:new_pool(PoolConfig).
 
 remove_pool(PoolName) ->
-    true = mysql_prepared_stm_utils:dispose(PoolName),
+    true = mysql_connection_manager:dispose_pool(PoolName),
     pooler:rm_pool(PoolName).
 
 prepare(PoolName, Stm, Query) ->
-    case mysql_prepared_stm_utils:set(PoolName, Stm, Query) of
+    case mysql_connection_manager:pool_add_stm(PoolName, Stm, Query) of
         true ->
-            mysql_connections:map(fun(Pid) -> mysql:prepare(Pid, Stm, Query) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql:prepare(Pid, Stm, Query) end);
         Error ->
             {error, Error}
     end.
 
 unprepare(PoolName, Stm) ->
-    case mysql_prepared_stm_utils:del(PoolName, Stm) of
+    case mysql_connection_manager:pool_remove_stm(PoolName, Stm) of
         true ->
-            mysql_connections:map(fun(Pid) -> mysql:unprepare(Pid, Stm) end);
+            mysql_connection_manager:map_connections(fun(Pid) -> mysql:unprepare(Pid, Stm) end);
         Error ->
             {error, Error}
     end.
