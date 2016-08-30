@@ -21,8 +21,12 @@ Examples:
 ok = mysql_pool:start(),
 mysql_pool:prepare(pool_one, get_accounts, <<"SELECT id, fname, lname, email FROM accounts WHERE id = ?">>).
 mysql_pool:execute(pool_one, get_accounts, [1]).
-```
 
+mysql_pool:transaction(pool_name, fun (Pid) ->
+       ok = mysql_connection:query(Pid, "INSERT INTO foo VALUES (?, ?)", [1, <<"banana">>]),
+       ok = mysql_connection:query(Pid, "INSERT INTO foo VALUES (?, ?)", [2, <<"kiwi">>]) 
+end).
+```
 
 ### Config
 
@@ -60,5 +64,22 @@ Each pool has the following settings:
     - `{query_cache_time, Timeout}` - The minimum number of milliseconds to cache prepared statements used for parametrized queries with `query/3`.
     - `{tcp_options, Options}` - Additional options for `gen_tcp:connect/3`. You may want to set `{recbuf, Size}` and `{sndbuf, Size}` if you send or receive more than the default (typically 8K) per query.
 
+### API
+
+The `mysql-otp` documentation is available [here][3]. `mysql_connection` is only a wrapper around `mysql` interface from `mysql-otp`, It's accepting the same arguments and returns the values in the same way.
+
+Beside this the `mysql_pool` comes with the following methods
+
+- `add_pool(PoolName, Size, ConnectionOptions)` - Add a pool at runtime with a specific size and connection options
+- `remove_pool(PoolName)` - Remove a pool at runtime
+- `prepare(PoolName, Stm, Query)` - Add a prepare statement for a pool. The statement will be added to all existing connections and also on all new connections that might be created in the future
+- `unprepare(PoolName, Stm)` - Remove a prepare statement from a pool. The statement will be unprepare on all existing connections as well.
+- `query/2, query/3, query/4` - Run a query over a connection in a specific pool
+- `execute/3, execute/4` - Run a prepare statement over a connection in a specific pool
+- `transaction/2, transaction/3, transaction/4` - Start a transaction over a connection in a specified pool
+- `with(PoolName, Fun)` - Pick a connection from the pool `PoolName` and call the specified method using the connection as argument : `Fun(Pid)`.
+ 
+
 [1]:https://github.com/mysql-otp/mysql-otp
 [2]:https://github.com/seth/pooler
+[3]:https://mysql-otp.github.io/mysql-otp/index.html
