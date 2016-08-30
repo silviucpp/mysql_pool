@@ -12,7 +12,8 @@
 ]).
 
 start() ->
-    application:ensure_all_started(mysql_pool).
+    {ok, _} = application:ensure_all_started(mysql_pool),
+    ok.
 
 stop() ->
     application:stop(mysql_pool).
