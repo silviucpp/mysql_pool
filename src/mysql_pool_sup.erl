@@ -9,14 +9,10 @@ start_link() ->
 
 init([]) ->
     Childrens = [
-        supervisor(pooler_sup, infinity),
-        worker(mysql_connection_watchdog, infinity)
+        supervisor(pooler_sup, infinity)
     ],
 
     {ok, {{one_for_one, 10, 10}, Childrens}}.
-
-worker(Name, WaitForClose) ->
-    children(Name, WaitForClose, worker).
 
 supervisor(Name, WaitForClose) ->
     children(Name, WaitForClose, supervisor).

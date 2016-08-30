@@ -36,7 +36,7 @@ remove_pool(PoolName) ->
 prepare(PoolName, Stm, Query) ->
     case mysql_prepared_stm_utils:set(PoolName, Stm, Query) of
         true ->
-            mysql_connection_watchdog:map_connection(fun(Pid) -> mysql:prepare(Pid, Stm, Query) end);
+            mysql_connections:map(fun(Pid) -> mysql:prepare(Pid, Stm, Query) end);
         Error ->
             {error, Error}
     end.
@@ -44,7 +44,7 @@ prepare(PoolName, Stm, Query) ->
 unprepare(PoolName, Stm) ->
     case mysql_prepared_stm_utils:del(PoolName, Stm) of
         true ->
-            mysql_connection_watchdog:map_connection(fun(Pid) -> mysql:unprepare(Pid, Stm) end);
+            mysql_connections:map(fun(Pid) -> mysql:unprepare(Pid, Stm) end);
         Error ->
             {error, Error}
     end.

@@ -17,4 +17,3 @@
 
 -define(CRITICAL_MSG(Format, Args),
     lager:critical(Format, Args)).
-

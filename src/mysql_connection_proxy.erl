@@ -37,6 +37,7 @@ handle_cast(_Request, State) ->
     {noreply, State}.
 
 handle_info({'EXIT', Pid, _}, State=#state{connection_pid =Pid}) ->
+    mysql_connections:remove(Pid),
     {noreply, State#state{connection_pid =undefined}};
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -53,11 +54,11 @@ get_connection(PoolName, Options) ->
     NewOptions = get_connection_options(PoolName, Options),
     case catch mysql:start_link(NewOptions) of
         {ok, Pid} ->
-            case mysql_connection_watchdog:watch_connection(Pid) of
+            case mysql_connections:add(Pid) of
                 ok ->
                     {ok, Pid};
                 UnexpectedError ->
-                    mysql_pool:stop(Pid),
+                    exit(Pid, kill),
                     {error, UnexpectedError}
             end;
         UnexpectedError ->

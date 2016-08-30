@@ -5,6 +5,9 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
+
+    ok = mysql_connections:init(),
+
     {ok, Pid} = mysql_pool_sup:start_link(),
 
     case mysql_utils:env(pools) of
