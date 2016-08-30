@@ -2,7 +2,7 @@
     {description, "mysql-otp pool based on pooler"},
     {vsn, "1.0"},
     {registered, []},
-    {applications, [kernel, stdlib, lager]},
+    {applications, [kernel, stdlib, lager, mysql, pooler]},
     {mod, {mysql_pool_app, []}},
     {env, []}
 ]}.
