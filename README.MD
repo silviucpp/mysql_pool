@@ -86,7 +86,22 @@ Beside this the `mysql_pool` comes with the following methods
 - `transaction/2, transaction/3, transaction/4` - Start a transaction over a connection in a specified pool
 - `with(PoolName, Fun)` - Pick a connection from the pool `PoolName` and call the specified method using the connection as argument : `Fun(Pid)`.
  
+### Utils
+
+#### Converting Row Data To JSON
+
+Using `mysql_utils:as_json` you are getting back a list of erlang terms in accordance with EEP-18. For actual utf8 binary JSON string you will need external library like [jsx][4] or [jiffy][5]
+
+Example: 
+
+```erl
+Result = mysql_pool:query(pool1, <<"select bar, baz from foo">>),
+JSON = mysql_utils:as_json(Result).
+#[[{<<"bar">>,<<"bar_value">>}, {<<"baz">>,<<"baz_value">>}], ...]
+```
 
 [1]:https://github.com/mysql-otp/mysql-otp
 [2]:https://github.com/seth/pooler
 [3]:https://mysql-otp.github.io/mysql-otp/index.html
+[4]:https://github.com/talentdeficit/jsx
+[5]:https://github.com/davisp/jiffy
