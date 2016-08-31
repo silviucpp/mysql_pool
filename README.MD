@@ -68,6 +68,11 @@ Each pool has the following settings:
 
 The `mysql-otp` documentation is available [here][3]. `mysql_connection` is only a wrapper around `mysql` interface from `mysql-otp`, It's accepting the same arguments and returns the values in the same way.
 
+Also it provides few additional methods like: `query_opt/3, query_opt/4, query_opt/5` and `execute_opt/4, execute_opt/5` where the last argument (`OptionFlag`) is an atom argument that can take one for the following values:
+- affected_rows - will transform all `ok` results into `{ok, NumberOfAffectedRows}`
+- insert_id - will transform all `ok` results into `{ok, LastInsertId}`
+- both - will transform all `ok` results into `{ok, {NumberOfAffectedRows, LastInsertId}}`
+
 Beside this the `mysql_pool` comes with the following methods
 
 - `add_pool(PoolName, Size, ConnectionOptions)` - Add a pool at runtime with a specific size and connection options
@@ -76,6 +81,8 @@ Beside this the `mysql_pool` comes with the following methods
 - `unprepare(PoolName, Stm)` - Remove a prepare statement from a pool. The statement will be unprepare on all existing connections as well.
 - `query/2, query/3, query/4` - Run a query over a connection in a specific pool
 - `execute/3, execute/4` - Run a prepare statement over a connection in a specific pool
+- `query_opt/3, query_opt/4, query_opt/5` - Run a query over a connection in a specific pool and returns additional info's for `ok` results as it's described above
+- `execute_opt/4, execute_opt/5` - Run a prepare statement over a connection in a specific pool and returns additional info's for `ok` results as it's described above
 - `transaction/2, transaction/3, transaction/4` - Start a transaction over a connection in a specified pool
 - `with(PoolName, Fun)` - Pick a connection from the pool `PoolName` and call the specified method using the connection as argument : `Fun(Pid)`.
  

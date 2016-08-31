@@ -8,11 +8,15 @@
 
 -export([
     start_link/1, stop/1,
-    query/2, query/3, query/4, execute/3, execute/4,
+    query/2, query/3, query/4,
+    execute/3, execute/4,
+    query_opt/3, query_opt/4, query_opt/5,
+    execute_opt/4, execute_opt/5,
     prepare/2, prepare/3, unprepare/2,
     warning_count/1, affected_rows/1, autocommit/1, insert_id/1,
     encode/2, in_transaction/1,
-    transaction/2, transaction/3, transaction/4]).
+    transaction/2, transaction/3, transaction/4
+]).
 
 start_link(Options) ->
     mysql:start_link(Options).
@@ -29,11 +33,26 @@ query(Conn, Query, Params) ->
 query(Conn, Query, Params, Timeout) ->
     mysql:query(Conn, Query, Params, Timeout).
 
+query_opt(Conn, Query, OptionFlag) ->
+    transform_result(Conn, mysql:query(Conn, Query), OptionFlag).
+
+query_opt(Conn, Query, Params, OptionFlag) ->
+    transform_result(Conn, mysql:query(Conn, Query, Params), OptionFlag).
+
+query_opt(Conn, Query, Params, Timeout, OptionFlag) ->
+    transform_result(Conn, mysql:query(Conn, Query, Params, Timeout), OptionFlag).
+
 execute(Conn, StatementRef, Params) ->
     execute_stm(Conn, StatementRef, Params, null).
 
 execute(Conn, StatementRef, Params, Timeout) ->
     execute_stm(Conn, StatementRef, Params, Timeout).
+
+execute_opt(Conn, StatementRef, Params, OptionFlag) ->
+    transform_result(Conn, execute_stm(Conn, StatementRef, Params, null), OptionFlag).
+
+execute_opt(Conn, StatementRef, Params, Timeout, OptionFlag) ->
+    transform_result(Conn, execute_stm(Conn, StatementRef, Params, Timeout), OptionFlag).
 
 prepare(Conn, Query) ->
     mysql:prepare(Conn, Query).
@@ -72,6 +91,23 @@ encode(Conn, Term) ->
     mysql:encode(Conn, Term).
 
 % internal methods
+
+transform_result(_Pid, Rs, null) ->
+    Rs;
+transform_result(Pid, Rs, Opt) ->
+    case Rs of
+        ok ->
+            case Opt of
+                affected_rows ->
+                    {ok, mysql:affected_rows(Pid)};
+                insert_id ->
+                    {ok, mysql:insert_id(Pid)};
+                both ->
+                    {ok, {mysql:affected_rows(Pid), mysql:insert_id(Pid)} }
+            end;
+        _ ->
+            Rs
+    end.
 
 execute_stm(Pid, Statement, Params, Timeout) ->
     Rs = case Timeout of

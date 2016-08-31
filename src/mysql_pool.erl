@@ -7,6 +7,8 @@
     prepare/3, unprepare/2,
     query/2, query/3, query/4,
     execute/3, execute/4,
+    query_opt/3, query_opt/4, query_opt/5,
+    execute_opt/4, execute_opt/5,
     transaction/2, transaction/3, transaction/4,
     with/2
 ]).
@@ -83,6 +85,21 @@ query(PoolName, Query, Params) ->
 query(PoolName, Query, Params, Timeout) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end).
 
+-spec(query_opt(PoolName::atom(), Query::binary(), OptionFlag:: affected_rows|insert_id|both) -> Result::term()).
+
+query_opt(PoolName, Query, OptionFlag) ->
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, OptionFlag) end).
+
+-spec(query_opt(PoolName::atom(), Query::binary(), Params::list()|integer(), OptionFlag:: affected_rows|insert_id|both) -> Result::term()).
+
+query_opt(PoolName, Query, Params, OptionFlag) ->
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, OptionFlag) end).
+
+-spec(query_opt(PoolName::atom(), Query::binary(), Params::list(), Timeout::integer(), OptionFlag:: affected_rows|insert_id|both) -> Result::term()).
+
+query_opt(PoolName, Query, Params, Timeout, OptionFlag) ->
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end).
+
 -spec(execute(PoolName::atom(), StatementRef::atom(), Params::list()) -> Result::term()).
 
 execute(PoolName, StatementRef, Params) ->
@@ -92,6 +109,16 @@ execute(PoolName, StatementRef, Params) ->
 
 execute(PoolName, StatementRef, Params, Timeout) ->
     pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end).
+
+-spec(execute_opt(PoolName::atom(), StatementRef::atom(), Params::list(), OptionFlag:: affected_rows|insert_id|both) -> Result::term()).
+
+execute_opt(PoolName, StatementRef, Params, OptionFlag) ->
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, OptionFlag) end).
+
+-spec(execute_opt(PoolName::atom(), StatementRef::atom(), Params::list(), Timeout::integer(), OptionFlag:: affected_rows|insert_id|both) -> Result::term()).
+
+execute_opt(PoolName, StatementRef, Params, Timeout, OptionFlag) ->
+    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, Timeout, OptionFlag) end).
 
 -spec(transaction(PoolName::atom(), TransactionFun::fun()) -> Result::term()).
 
