@@ -1,8 +1,9 @@
 {application, mysql_pool, [
     {description, "mysql-otp pool based on pooler"},
-    {vsn, "1.0"},
+    {vsn, "1.1"},
     {registered, []},
-    {applications, [kernel, stdlib, lager, mysql, pooler]},
+    {applications, [kernel, stdlib, lager, pooler]},
+    {included_applications, [mysql, plists]},
     {mod, {mysql_pool_app, []}},
     {env, []}
 ]}.
