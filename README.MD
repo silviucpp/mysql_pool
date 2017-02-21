@@ -20,7 +20,7 @@ Using `rebar`, put this in your `rebar.config`:
 
 ```erlang
 {deps, [
-    {mysql_pool, ".*", {git, "https://github.com/silviucpp/mysql_pool.git", {tag, "1.0"}}}
+    {mysql_pool, ".*", {git, "https://github.com/silviucpp/mysql_pool.git", {tag, "1.1"}}}
 ]}.
 ```
 

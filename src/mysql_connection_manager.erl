@@ -42,8 +42,8 @@ get_connection_pool(Pid) ->
     case catch ets:lookup(?POOL_CONNECTIONS_TABLE, Pid) of
         [{Pid, Poolname}] ->
             {ok, Poolname};
-        UnexpectedError ->
-            UnexpectedError
+        Error ->
+            Error
     end.
 
 create_pool(PoolName) ->
@@ -100,7 +100,7 @@ ets_add_connection(Pid, PoolName) ->
         true ->
             ok;
         Error ->
-            ?ERROR_MSG(<<"failed to add the pid: ~p in the connections table. error: ~p">>, [Pid, Error]),
+            ?ERROR_MSG("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
             Error
     end.
 
@@ -109,7 +109,8 @@ ets_remove_connection(Pid) ->
         true ->
             ok;
         Error ->
-            ?ERROR_MSG(<<"pid: ~p not found in the connections table error: ~p">>, [Pid, Error])
+            ?ERROR_MSG("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
+            Error
     end.
 
 ets_pool_create(PoolName) ->

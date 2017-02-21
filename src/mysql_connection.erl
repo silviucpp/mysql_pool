@@ -125,7 +125,7 @@ execute_stm(Pid, Statement, Params, Timeout) ->
                 ok ->
                     execute_stm(Pid, Statement, Params, Timeout);
                 UnexpectedError ->
-                    ?ERROR_MSG(<<"failed to reprepare evicted statement: ~p">>, [UnexpectedError]),
+                    ?ERROR_MSG("failed to reprepare evicted statement: ~p", [UnexpectedError]),
                     Rs
             end;
         _ ->
@@ -133,7 +133,7 @@ execute_stm(Pid, Statement, Params, Timeout) ->
     end.
 
 reprepare_evicted_stm(PoolName, Pid, Stm) ->
-    ?INFO_MSG(<<"reprepare evicted statement: ~p">>, [Stm]),
+    ?INFO_MSG("reprepare evicted statement: ~p", [Stm]),
 
     case mysql_connection_manager:pool_get_statement(PoolName, Stm) of
         null ->

@@ -51,7 +51,7 @@ json_val(Value) when is_tuple(Value) ->
         {Year, Month, Day} ->
             iolist_to_binary( io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w", [Year, Month, Day]));
         {Days, {Hour, Min, Sec}} ->
-            iolist_to_binary( io_lib:format("~2.2.0w:~2.2.0w:~2.2.0w", [Days *24+Hour, Min, trunc(Sec)]))
+            iolist_to_binary( io_lib:format("~2.2.0w:~2.2.0w:~2.2.0w", [Days*24+Hour, Min, trunc(Sec)]))
     end;
 json_val(Value) ->
     Value.
