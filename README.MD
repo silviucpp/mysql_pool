@@ -7,8 +7,9 @@ Use always the methods from `mysql_connection` in case you need to play with a c
 #Notes
  
 `mysql_pool` it's using a fork of `mysql-otp` which it's slightly different having the following changes:
-    - [Fix reading of unsigned integers in binary protocol] [6]
-    - [All floats are encoded as decimals withg 8 digit precision][7]
+
+- [Fix reading of unsigned integers in binary protocol] [6]
+- [All floats are encoded as decimals withg 8 digit precision][7]
     
 In case you want to use the master branch of `mysql-otp` or a specific version change this in `rebar.config` ot bind to the version you want.
 The interfaces are 100 % compatible so should work without any problem.    
