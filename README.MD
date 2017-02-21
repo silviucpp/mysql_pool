@@ -4,6 +4,15 @@ mysql_pool provides connection pooling for [MySQL/OTP][1] using [Pooler][2]. It 
 
 Use always the methods from `mysql_connection` in case you need to play with a certain connection from the pool. This module has logic to reprepare and execute the query again in case the server evicted a prepare statement. The [MySQL/OTP][1] is not treating this case at this moment.   
 
+#Notes
+ 
+`mysql_pool` it's using a fork of `mysql-otp` which it's slightly different having the following changes:
+    - [Fix reading of unsigned integers in binary protocol] [6]
+    - [All floats are encoded as decimals withg 8 digit precision][7]
+    
+In case you want to use the master branch of `mysql-otp` or a specific version change this in `rebar.config` ot bind to the version you want.
+The interfaces are 100 % compatible so should work without any problem.    
+
 ### Getting starting:
 
 Using `rebar`, put this in your `rebar.config`:
@@ -61,6 +70,7 @@ Each pool has the following settings:
     - `{prepare, NamedStatements}` - Named prepared statements to be created as soon as the connection is ready. Can be created also at runtime using `mysql_pool:prepare/3`
     - `{queries, Queries}` - Queries to be executed as soon as the connection is ready. Any results are discarded. Typically, this is used for setting time zone and other session variables.
     - `{query_timeout, Timeout}` - The default time to wait for a response when executing a query or a prepared statement. This can be given per query using `query/3,4` and `execute/4`. The default is `infinity`.
+    - `{found_rows, boolean()}` - If set to true, the connection will be established with CLIENT_FOUND_ROWS capability. affected_rows/1 will now return the number of found rows, not the number of rows changed by the query
     - `{query_cache_time, Timeout}` - The minimum number of milliseconds to cache prepared statements used for parametrized queries with `query/3`.
     - `{tcp_options, Options}` - Additional options for `gen_tcp:connect/3`. You may want to set `{recbuf, Size}` and `{sndbuf, Size}` if you send or receive more than the default (typically 8K) per query.
 
@@ -105,3 +115,5 @@ JSON = mysql_utils:as_json(Result).
 [3]:https://mysql-otp.github.io/mysql-otp/index.html
 [4]:https://github.com/talentdeficit/jsx
 [5]:https://github.com/davisp/jiffy
+[6]:https://github.com/mysql-otp/mysql-otp/pull/58
+[7]:https://github.com/mysql-otp/mysql-otp/issues/52
