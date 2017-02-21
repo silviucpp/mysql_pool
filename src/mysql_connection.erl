@@ -124,8 +124,8 @@ execute_stm(Pid, Statement, Params, Timeout) ->
             case reprepare_evicted_stm(PoolName, Pid, Statement) of
                 ok ->
                     execute_stm(Pid, Statement, Params, Timeout);
-                UnexpectedError ->
-                    ?ERROR_MSG("failed to reprepare evicted statement: ~p", [UnexpectedError]),
+                Error ->
+                    ?ERROR_MSG("failed to reprepare evicted statement: ~p", [Error]),
                     Rs
             end;
         _ ->
@@ -142,7 +142,7 @@ reprepare_evicted_stm(PoolName, Pid, Stm) ->
             case mysql:prepare(Pid, Stm, Query) of
                 {ok, Stm} ->
                     ok;
-                UnexpectedResult ->
-                    UnexpectedResult
+                Error ->
+                    Error
             end
     end.

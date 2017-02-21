@@ -76,15 +76,16 @@ handle_call({remove_connection, Pid}, _From, State) ->
     {reply, ets_remove_connection(Pid), State};
 handle_call({create_pool, PoolName}, _From, State) ->
     {reply,  ets_pool_create(PoolName), State};
-
-
-handle_call(_Request, _From, State) ->
+handle_call(Request, _From, State) ->
+    ?ERROR_MSG("unexpected request: ~p", [Request]),
     {reply, ok, State}.
 
-handle_cast(_Request, State) ->
+handle_cast(Request, State) ->
+    ?ERROR_MSG("unexpected cast message: ~p", [Request]),
     {noreply, State}.
 
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+    ?ERROR_MSG("unexpected info message: ~p", [Info]),
     {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -114,8 +115,13 @@ ets_remove_connection(Pid) ->
     end.
 
 ets_pool_create(PoolName) ->
-    PoolName = ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]),
-    ok.
+    case catch ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]) of
+        PoolName ->
+            ok;
+        Error ->
+            ?ERROR_MSG("creating pool ~p failed with error: ~p", [PoolName, Error]),
+            Error
+    end.
 
 ets_pool_dispose(PoolName) ->
     ets:delete(PoolName).
