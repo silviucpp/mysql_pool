@@ -33,8 +33,8 @@ mysql_pool:prepare(pool_one, get_accounts, <<"SELECT id, fname, lname, email FRO
 mysql_pool:execute(pool_one, get_accounts, [1]).
 
 mysql_pool:transaction(pool_name, fun (Pid) ->
-       ok = mysql_connection:query(Pid, "INSERT INTO foo VALUES (?, ?)", [1, <<"banana">>]),
-       ok = mysql_connection:query(Pid, "INSERT INTO foo VALUES (?, ?)", [2, <<"kiwi">>]) 
+       ok = mysql_connection:query(Pid, "INSERT INTO foo(id, name) VALUES (?, ?)", [1, <<"banana">>]),
+       ok = mysql_connection:query(Pid, "INSERT INTO foo(id, name) VALUES (?, ?)", [2, <<"kiwi">>]) 
 end).
 ```
 

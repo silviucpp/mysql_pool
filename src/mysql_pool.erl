@@ -30,6 +30,7 @@ add_pool(PoolName, Size, ConnectionOptions) ->
         {name, PoolName},
         {max_count, Size},
         {init_count, Size},
+        {queue_max, 50000},
         {start_mfa, {mysql_connection_proxy, start_link, [PoolName, ConnectionOptions]}}],
 
     pooler:new_pool(PoolConfig).
@@ -149,7 +150,7 @@ with(PoolName, Fun) when is_function(Fun, 1) ->
 % internals
 
 pooler_transaction(Pool, Fun) ->
-    ProxyPid = pooler:take_member(Pool),
+    ProxyPid = pooler:take_member(Pool, 5000),
     try
         proxy_exec(ProxyPid, Fun)
     after
