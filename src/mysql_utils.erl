@@ -25,12 +25,7 @@ lookup(Key, List) ->
     lookup(Key, List, null).
 
 replace(Key, NewValue, List) ->
-    case lookup(Key, List) of
-        null ->
-            [{Key, NewValue} | List];
-        _ ->
-            lists:keyreplace(Key, 1, List, {Key, NewValue})
-    end.
+    lists:keystore(Key, 1, List, {Key, NewValue}).
 
 delete(Key, List) ->
     lists:keydelete(Key, 1, List).
