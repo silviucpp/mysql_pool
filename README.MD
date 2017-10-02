@@ -4,11 +4,11 @@ mysql_pool provides connection pooling for [MySQL/OTP][1] using [Pooler][2]. It 
 
 Use always the methods from `mysql_connection` in case you need to play with a certain connection from the pool. This module has logic to reprepare and execute the query again in case the server evicted a prepare statement. The [MySQL/OTP][1] is not treating this case at this moment.
 
-#Notes
+### Notes
 
 `mysql_pool` it's using a fork of `mysql-otp` which it's slightly different having the following changes:
 
-- [All floats are encoded as decimals withg 8 digit precision][7]
+- [All floats are encoded as decimals withg 8 digit precision][6]
 
 In case you want to use the master branch of `mysql-otp` or a specific version change this in `rebar.config` ot bind to the version you want.
 The interfaces are 100 % compatible so should work without any problem.
@@ -115,5 +115,4 @@ JSON = mysql_utils:as_json(Result).
 [3]:https://mysql-otp.github.io/mysql-otp/index.html
 [4]:https://github.com/talentdeficit/jsx
 [5]:https://github.com/davisp/jiffy
-[6]:https://github.com/mysql-otp/mysql-otp/pull/58
-[7]:https://github.com/mysql-otp/mysql-otp/issues/52
+[6]:https://github.com/mysql-otp/mysql-otp/issues/52
