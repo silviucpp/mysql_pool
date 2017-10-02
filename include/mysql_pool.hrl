@@ -1,4 +1,9 @@
 
+-type reason() :: any().
+-type pool_id() :: atom().
+-type stm_id() :: atom().
+-type opt_flag() :: affected_rows|insert_id|both.
+
 -define(PRINT_MSG(Format, Args),
     io:format(Format, Args)).
 
