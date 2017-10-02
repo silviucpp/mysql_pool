@@ -1,6 +1,4 @@
-
 -module(mysql_connection).
--author("silviu").
 
 -include("mysql_pool.hrl").
 

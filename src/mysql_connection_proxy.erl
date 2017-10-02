@@ -1,5 +1,4 @@
 -module(mysql_connection_proxy).
--author("silviu").
 
 -behaviour(gen_server).
 

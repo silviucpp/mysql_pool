@@ -1,5 +1,4 @@
 -module(mysql_utils).
--author("silviu").
 
 -export([
     env/1,

@@ -1,4 +1,3 @@
--author("silviu.caragea").
 
 -define(PRINT_MSG(Format, Args),
     io:format(Format, Args)).

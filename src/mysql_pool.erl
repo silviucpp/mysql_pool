@@ -1,5 +1,4 @@
 -module(mysql_pool).
--author("silviu").
 
 -export([
     start/0, stop/0,
