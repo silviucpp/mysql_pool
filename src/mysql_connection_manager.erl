@@ -126,6 +126,7 @@ terminate(Reason, #state{pools = Pools}) ->
 
     Fun = fun(P) ->
         ?INFO_MSG("mysql_connection_manager remove pool: ~p", [P]),
+        map_connections(P, fun(C) -> mysql_connection:stop(C) end),
         internal_dispose_pool(P)
     end,
     lists:foreach(Fun, sets:to_list(Pools)),

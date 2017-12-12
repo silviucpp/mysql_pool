@@ -56,7 +56,7 @@ handle_cast(_Request, State) ->
 
 handle_info({'EXIT', Pid, _}, State=#state{connection_pid =Pid}) ->
     mysql_connection_manager:remove_connection(Pid),
-    {noreply, State#state{connection_pid =undefined}};
+    {noreply, State#state{connection_pid = undefined}};
 handle_info(_Info, State) ->
     {noreply, State}.
 
