@@ -53,24 +53,13 @@ stop() ->
     {ok, pid()} | {error, reason()}.
 
 add_pool(PoolName, Size, ConnectionOptions) ->
-
-    ok = mysql_connection_manager:create_pool(PoolName),
-
-    PoolConfig = [
-        {name, PoolName},
-        {max_count, Size},
-        {init_count, Size},
-        {queue_max, 50000},
-        {start_mfa, {mysql_connection_proxy, start_link, [PoolName, ConnectionOptions]}}],
-
-    pooler:new_pool(PoolConfig).
+    mysql_connection_manager:create_pool(PoolName, Size, ConnectionOptions).
 
 -spec remove_pool(pool_id()) ->
     ok | {error, reason()}.
 
 remove_pool(PoolName) ->
-    true = mysql_connection_manager:dispose_pool(PoolName),
-    pooler:rm_pool(PoolName).
+    mysql_connection_manager:dispose_pool(PoolName).
 
 -spec prepare(pool_id(), stm_id(), binary()) ->
     ok | {error, reason()}.

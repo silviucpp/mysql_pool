@@ -8,12 +8,12 @@
 
 -export([
     start_link/0,
+    create_pool/3,
+    dispose_pool/1,
     add_connection/2,
     remove_connection/1,
     map_connections/2,
     get_connection_pool/1,
-    create_pool/1,
-    dispose_pool/1,
     pool_add_stm/3,
     pool_remove_stm/2,
     pool_get_statements/1,
@@ -29,16 +29,34 @@
     code_change/3
 ]).
 
--record(state, {}).
+-record(state, {pools}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+create_pool(PoolName, Size, ConnectionOptions) ->
+    gen_server:call(?MODULE, {create_pool, PoolName, Size, ConnectionOptions}).
+
+dispose_pool(PoolName) ->
+    gen_server:call(?MODULE, {dispose_pool, PoolName}).
+
 add_connection(Pid, PoolName) ->
-    gen_server:call(?MODULE, {add_connection, Pid, PoolName}).
+    case catch ets:insert(?ETS_CONNECTIONS_TABLE, {Pid, PoolName}) of
+        true ->
+            ok;
+        Error ->
+            ?ERROR_MSG("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
+            Error
+    end.
 
 remove_connection(Pid) ->
-    gen_server:call(?MODULE, {remove_connection, Pid}).
+    case catch ets:delete(?ETS_CONNECTIONS_TABLE, Pid) of
+        true ->
+            ok;
+        Error ->
+            ?ERROR_MSG("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
+            Error
+    end.
 
 map_connections(PoolName, Fun) ->
     Pids = ets:select(?ETS_CONNECTIONS_TABLE, [{ {'$1', PoolName}, [], ['$1']}]),
@@ -52,37 +70,45 @@ get_connection_pool(Pid) ->
             Error
     end.
 
-create_pool(PoolName) ->
-    gen_server:call(?MODULE, {create_pool, PoolName}).
-
-dispose_pool(PoolName) ->
-    ets_pool_dispose(PoolName).
-
 pool_add_stm(PoolName, Stm, Query) ->
-    ets_pool_set(PoolName, Stm, Query).
+    ets:insert(PoolName, {Stm, Query}).
 
 pool_remove_stm(PoolName, Stm) ->
-    ets_pool_del(PoolName, Stm).
+    ets:delete(PoolName, Stm).
 
 pool_get_statements(PoolName) ->
-    ets_pool_to_list(PoolName).
+    ets:tab2list(PoolName).
 
 pool_get_statement(PoolName, Stm) ->
-    ets_pool_get_statement(PoolName, Stm).
+    case ets:lookup(PoolName, Stm) of
+        [{Stm, Query}] ->
+            {ok, Stm, Query};
+        _ ->
+            null
+    end.
 
 %gen_server callbacks
 
 init([]) ->
-    EtsTablesOPts = [set, named_table, protected, {read_concurrency, true}],
+    process_flag(trap_exit, true),
+    EtsTablesOPts = [set, named_table, public, {read_concurrency, true}],
     ?ETS_CONNECTIONS_TABLE = ets:new(?ETS_CONNECTIONS_TABLE, EtsTablesOPts),
-    {ok, #state{}}.
+    {ok, #state{pools = sets:new()}}.
 
-handle_call({add_connection, Pid, PoolName}, _From, State) ->
-    {reply, ets_add_connection(Pid, PoolName), State};
-handle_call({remove_connection, Pid}, _From, State) ->
-    {reply, ets_remove_connection(Pid), State};
-handle_call({create_pool, PoolName}, _From, State) ->
-    {reply,  ets_pool_create(PoolName), State};
+handle_call({create_pool, PoolName, Size, ConnectionOptions}, _From, #state{pools = P} = State) ->
+    case internal_create_pool(PoolName, Size, ConnectionOptions) of
+        {ok, _} = R ->
+            {reply, R, State#state{pools = sets:add_element(PoolName, P)}};
+        Error ->
+            {reply, Error, State}
+    end;
+handle_call({dispose_pool, PoolName}, _From, #state{pools = P} = State) ->
+    case internal_dispose_pool(PoolName) of
+        ok ->
+            {reply, ok, State#state{pools = sets:del_element(PoolName, P)}};
+        Error ->
+            {reply, Error, State}
+    end;
 handle_call(Request, _From, State) ->
     ?ERROR_MSG("unexpected request: ~p", [Request]),
     {reply, ok, State}.
@@ -95,57 +121,42 @@ handle_info(Info, State) ->
     ?ERROR_MSG("unexpected info message: ~p", [Info]),
     {noreply, State}.
 
-terminate(_Reason, _State) ->
+terminate(Reason, #state{pools = Pools}) ->
+    ?INFO_MSG("mysql_connection_manager will stop with reason: ~p...", [Reason]),
+
+    Fun = fun(P) ->
+        ?INFO_MSG("mysql_connection_manager remove pool: ~p", [P]),
+        internal_dispose_pool(P)
+    end,
+    lists:foreach(Fun, sets:to_list(Pools)),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%internal methods
+% internals
 
-ets_add_connection(Pid, PoolName) ->
-    case catch ets:insert(?ETS_CONNECTIONS_TABLE, {Pid, PoolName}) of
+internal_create_pool(PoolName, Size, ConnectionOptions) ->
+    try
+        PoolName = ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]),
+        PoolConfig = [
+            {name, PoolName},
+            {max_count, Size},
+            {init_count, Size},
+            {queue_max, 50000},
+            {start_mfa, {mysql_connection_proxy, start_link, [PoolName, ConnectionOptions]}}
+        ],
+        pooler:new_pool(PoolConfig)
+    catch
+        _:Error ->
+            ?ERROR_MSG("creating pool: ~p failed with error: ~p stack: ~p", [PoolName, Error, erlang:get_stacktrace()]),
+            Error
+    end.
+
+internal_dispose_pool(PoolName) ->
+    case catch ets:delete(PoolName) of
         true ->
-            ok;
+            pooler:rm_pool(PoolName);
         Error ->
-            ?ERROR_MSG("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
             Error
-    end.
-
-ets_remove_connection(Pid) ->
-    case catch ets:delete(?ETS_CONNECTIONS_TABLE, Pid) of
-        true ->
-            ok;
-        Error ->
-            ?ERROR_MSG("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
-            Error
-    end.
-
-ets_pool_create(PoolName) ->
-    case catch ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]) of
-        PoolName ->
-            ok;
-        Error ->
-            ?ERROR_MSG("creating pool ~p failed with error: ~p", [PoolName, Error]),
-            Error
-    end.
-
-ets_pool_dispose(PoolName) ->
-    ets:delete(PoolName).
-
-ets_pool_set(PoolName, StmName, Query) ->
-    ets:insert(PoolName, {StmName, Query}).
-
-ets_pool_del(PoolName, StmName) ->
-    ets:delete(PoolName, StmName).
-
-ets_pool_to_list(PoolName) ->
-    ets:tab2list(PoolName).
-
-ets_pool_get_statement(PoolName, Stm) ->
-    case ets:lookup(PoolName, Stm) of
-        [{Stm, Query}] ->
-            {ok, Stm, Query};
-        _ ->
-            null
     end.
