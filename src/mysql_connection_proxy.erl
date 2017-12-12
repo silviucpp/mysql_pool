@@ -2,8 +2,19 @@
 
 -behaviour(gen_server).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([start_link/2, get_pid/1]).
+-export([
+    start_link/2,
+    get_pid/1,
+
+    % gen_server
+
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
 -record(state, {pool_name, connection_pid, connection_args}).
 
