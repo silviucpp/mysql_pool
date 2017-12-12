@@ -1,6 +1,6 @@
 {application, mysql_pool, [
     {description, "mysql-otp pool based on pooler"},
-    {vsn, "1.3"},
+    {vsn, "1.5"},
     {registered, []},
     {applications, [kernel, stdlib, lager, pooler]},
     {included_applications, [mysql, plists]},
