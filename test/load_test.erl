@@ -1,20 +1,26 @@
 -module(load_test).
--author("silviu").
 
-%%  CREATE TABLE IF NOT EXISTS `users` (`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `name` VARCHAR(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE = InnoDB
+%%  CREATE TABLE IF NOT EXISTS `users`
+%%      (`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+%%       `name` VARCHAR(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE = InnoDB
 
--export([init/0, bench/2]).
-
-init() ->
-    ok = mysql_pool:start(),
-    mysql_pool:prepare(mypool, get_accounts, <<"SELECT id, name FROM users WHERE id = ?">>).
+-export([
+    bench/2
+]).
 
 bench(Number, Concurrency) ->
+    case mysql_pool:start() of
+        ok ->
+            mysql_pool:prepare(mypool, get_accounts, <<"SELECT id, name FROM users WHERE id = ?">>);
+        _ ->
+            ok
+    end,
+
     Self = self(),
     List = lists:seq(1, Concurrency),
     LoopNumbers = Number div Concurrency,
 
-    Fun = fun() -> mysql_pool:execute(mypool, get_accounts, [1]) end,
+    Fun = fun() -> {ok, _, _} = mysql_pool:execute(mypool, get_accounts, [1]) end,
 
     A = os:timestamp(),
     Pids = [spawn_link(fun() -> loop(LoopNumbers, Fun), Self ! {self(), done} end) || _ <- List],

@@ -25,9 +25,9 @@ stop(_State) ->
 
 load_pools(Pools) ->
     FunPool = fun({PoolName, Options}) ->
-        Size = mysql_utils:lookup(size, Options, 5),
+        Size = mysql_utils:lookup(size, Options, 20),
+        MaxOverflow = mysql_utils:lookup(max_overflow, Options, 0),
         ConnectionOptions = mysql_utils:lookup(connection_options, Options, []),
-        {ok, _} = mysql_pool:add_pool(PoolName, Size, ConnectionOptions)
+        {ok, _} = mysql_pool:add_pool(PoolName, Size, MaxOverflow, ConnectionOptions)
     end,
-
     ok = lists:foreach(FunPool, Pools).

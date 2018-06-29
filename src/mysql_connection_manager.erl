@@ -8,7 +8,7 @@
 
 -export([
     start_link/0,
-    create_pool/3,
+    create_pool/4,
     dispose_pool/1,
     add_connection/2,
     remove_connection/1,
@@ -34,8 +34,8 @@
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-create_pool(PoolName, Size, ConnectionOptions) ->
-    gen_server:call(?MODULE, {create_pool, PoolName, Size, ConnectionOptions}).
+create_pool(PoolName, Size, MaxOverflow, ConnectionOptions) ->
+    gen_server:call(?MODULE, {create_pool, PoolName, Size, MaxOverflow, ConnectionOptions}).
 
 dispose_pool(PoolName) ->
     gen_server:call(?MODULE, {dispose_pool, PoolName}).
@@ -95,8 +95,8 @@ init([]) ->
     ?ETS_CONNECTIONS_TABLE = ets:new(?ETS_CONNECTIONS_TABLE, EtsTablesOPts),
     {ok, #state{pools = sets:new()}}.
 
-handle_call({create_pool, PoolName, Size, ConnectionOptions}, _From, #state{pools = P} = State) ->
-    case internal_create_pool(PoolName, Size, ConnectionOptions) of
+handle_call({create_pool, PoolName, PoolSize, MaxOverflow, ConnectionOptions}, _From, #state{pools = P} = State) ->
+    case internal_create_pool(PoolName, PoolSize, MaxOverflow, ConnectionOptions) of
         {ok, _} = R ->
             {reply, R, State#state{pools = sets:add_element(PoolName, P)}};
         Error ->
@@ -137,17 +137,17 @@ code_change(_OldVsn, State, _Extra) ->
 
 % internals
 
-internal_create_pool(PoolName, Size, ConnectionOptions) ->
+internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions) ->
     try
         PoolName = ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]),
-        PoolConfig = [
-            {name, PoolName},
-            {max_count, Size},
-            {init_count, Size},
-            {queue_max, 50000},
-            {start_mfa, {mysql_connection_proxy, start_link, [PoolName, ConnectionOptions]}}
+        PoolArgs = [
+            {max_overflow, MaxOverflow},
+            {size, Size},
+            {name, {local, PoolName}},
+            {worker_module, mysql_connection_proxy}
         ],
-        pooler:new_pool(PoolConfig)
+        ChildSpecs = poolboy:child_spec(PoolName, PoolArgs, [PoolName, ConnectionOptions]),
+        mysql_pool_sup:add_pool(PoolName, ChildSpecs)
     catch
         _:Error ->
             ?ERROR_MSG("creating pool: ~p failed with error: ~p stack: ~p", [PoolName, Error, erlang:get_stacktrace()]),
@@ -157,7 +157,7 @@ internal_create_pool(PoolName, Size, ConnectionOptions) ->
 internal_dispose_pool(PoolName) ->
     case catch ets:delete(PoolName) of
         true ->
-            pooler:rm_pool(PoolName);
+            mysql_pool_sup:remove_pool(PoolName);
         Error ->
             Error
     end.

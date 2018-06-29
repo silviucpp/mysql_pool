@@ -4,11 +4,29 @@
 
 -export([
     start_link/0,
+    add_pool/2,
+    remove_pool/1,
     init/1
 ]).
 
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+add_pool(PoolName, ChildSpecs) ->
+    case supervisor:start_child(?MODULE, ChildSpecs) of
+        {error, already_present} ->
+            supervisor:restart_child(?MODULE, PoolName);
+        Other ->
+            Other
+    end.
+
+remove_pool(PoolName) ->
+    case supervisor:terminate_child(?MODULE, PoolName) of
+        ok ->
+            supervisor:delete_child(?MODULE, PoolName);
+        Error ->
+            Error
+    end.
 
 init([]) ->
     Childrens = [

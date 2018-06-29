@@ -1,6 +1,6 @@
 # mysql_pool
 
-mysql_pool provides connection pooling for [MySQL/OTP][1] using [Pooler][2]. It contains convenience functions for executing SQL queries on a mysql connection in a pool.
+mysql_pool provides connection pooling for [MySQL/OTP][1] using [Poolboy][2]. It contains convenience functions for executing SQL queries on a mysql connection in a pool.
 
 Use always the methods from `mysql_connection` in case you need to play with a certain connection from the pool. This module has logic to reprepare and execute the query again in case the server evicted a prepare statement. The [MySQL/OTP][1] is not treating this case at this moment.
 
@@ -111,7 +111,7 @@ JSON = mysql_utils:as_json(Result).
 ```
 
 [1]:https://github.com/mysql-otp/mysql-otp
-[2]:https://github.com/seth/pooler
+[2]:https://github.com/devinus/poolboy
 [3]:https://mysql-otp.github.io/mysql-otp/index.html
 [4]:https://github.com/talentdeficit/jsx
 [5]:https://github.com/davisp/jiffy

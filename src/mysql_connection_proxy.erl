@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 -export([
-    start_link/2,
+    start_link/1,
     get_pid/1,
 
     % gen_server
@@ -18,8 +18,8 @@
 
 -record(state, {pool_name, connection_pid, connection_args}).
 
-start_link(PoolName, Args) ->
-    gen_server:start_link(?MODULE, [PoolName, Args], []).
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
 
 get_pid(ProxyPid) ->
     gen_server:call(ProxyPid, get_connection_pid, infinity).

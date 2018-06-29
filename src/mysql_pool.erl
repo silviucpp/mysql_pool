@@ -6,7 +6,7 @@
     start/0,
     start/1,
     stop/0,
-    add_pool/3,
+    add_pool/4,
     remove_pool/1,
     prepare/3,
     unprepare/2,
@@ -49,11 +49,11 @@ start(Type) ->
 stop() ->
     application:stop(mysql_pool).
 
--spec add_pool(pool_id(), integer(), list()) ->
+-spec add_pool(pool_id(), non_neg_integer(), non_neg_integer(), list()) ->
     {ok, pid()} | {error, reason()}.
 
-add_pool(PoolName, Size, ConnectionOptions) ->
-    mysql_connection_manager:create_pool(PoolName, Size, ConnectionOptions).
+add_pool(PoolName, PoolSize, MaxOverflow, ConnectionOptions) ->
+    mysql_connection_manager:create_pool(PoolName, PoolSize, MaxOverflow, ConnectionOptions).
 
 -spec remove_pool(pool_id()) ->
     ok | {error, reason()}.
@@ -97,67 +97,67 @@ unprepare(PoolName, Stm) ->
     term().
 
 query(PoolName, Query) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
 
 -spec query(pool_id(), binary(), list()|integer()) ->
     term().
 
 query(PoolName, Query, Params) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params) end).
 
 -spec query(pool_id(), binary(), list(), integer()) ->
     term().
 
 query(PoolName, Query, Params, Timeout) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end, Timeout).
 
 -spec query_opt(pool_id(), binary(), opt_flag()) ->
     term().
 
 query_opt(PoolName, Query, OptionFlag) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, OptionFlag) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, OptionFlag) end).
 
 -spec query_opt(pool_id(), binary(), list()|integer(), opt_flag()) ->
     term().
 
 query_opt(PoolName, Query, Params, OptionFlag) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, OptionFlag) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, OptionFlag) end).
 
 -spec query_opt(pool_id(), binary(), list(), integer(), opt_flag()) ->
     term().
 
 query_opt(PoolName, Query, Params, Timeout, OptionFlag) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end, Timeout).
 
 -spec execute(pool_id(), stm_id(), list()) ->
     term().
 
 execute(PoolName, StatementRef, Params) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params) end).
 
 -spec execute(pool_id(), stm_id(), list(), integer()) ->
     term().
 
 execute(PoolName, StatementRef, Params, Timeout) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end, Timeout).
 
 -spec execute_opt(pool_id(), stm_id(), list(), opt_flag()) ->
     term().
 
 execute_opt(PoolName, StatementRef, Params, OptionFlag) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, OptionFlag) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, OptionFlag) end).
 
 -spec execute_opt(pool_id(), stm_id(), list(), integer(), opt_flag()) ->
     term().
 
 execute_opt(PoolName, StatementRef, Params, Timeout, OptionFlag) ->
-    pooler_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, Timeout, OptionFlag) end).
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, Timeout, OptionFlag) end, Timeout).
 
 -spec transaction(pool_id(), fun()) ->
     term().
 
 transaction(PoolName, TransactionFun) when is_function(TransactionFun, 1) ->
-    pooler_transaction(PoolName, fun(MysqlConn) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn], infinity)
     end).
 
@@ -165,7 +165,7 @@ transaction(PoolName, TransactionFun) when is_function(TransactionFun, 1) ->
     term().
 
 transaction(PoolName, TransactionFun, Args) when is_function(TransactionFun, length(Args) + 1) ->
-    pooler_transaction(PoolName, fun(MysqlConn) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], infinity)
     end).
 
@@ -173,7 +173,7 @@ transaction(PoolName, TransactionFun, Args) when is_function(TransactionFun, len
     term().
 
 transaction(PoolName, TransactionFun, Args, Retries) when is_function(TransactionFun, length(Args) + 1) ->
-    pooler_transaction(PoolName, fun(MysqlConn) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) ->
         mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], Retries)
     end).
 
@@ -181,16 +181,19 @@ transaction(PoolName, TransactionFun, Args, Retries) when is_function(Transactio
     term().
 
 with(PoolName, Fun) when is_function(Fun, 1) ->
-    pooler_transaction(PoolName, Fun).
+    poolboy_transaction(PoolName, Fun).
 
 % internals
 
-pooler_transaction(Pool, Fun) ->
-    ProxyPid = pooler:take_member(Pool, 5000),
+poolboy_transaction(PoolName, Fun) ->
+    poolboy_transaction(PoolName, Fun, infinity).
+
+poolboy_transaction(PoolName, Fun, Timeout) ->
+    ProxyPid = poolboy:checkout(PoolName, true, Timeout),
     try
         proxy_exec(ProxyPid, Fun)
     after
-        ok = pooler:return_member(Pool, ProxyPid)
+        ok = poolboy:checkin(PoolName, ProxyPid)
     end.
 
 proxy_exec(ProxyPid, Fun) ->
