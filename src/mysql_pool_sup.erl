@@ -3,14 +3,14 @@
 -behaviour(supervisor).
 
 -export([
-    start_link/0,
+    start_link/1,
     add_pool/2,
     remove_pool/1,
     init/1
 ]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link(AppPid) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [AppPid]).
 
 add_pool(PoolName, ChildSpecs) ->
     case supervisor:start_child(?MODULE, ChildSpecs) of
@@ -28,15 +28,15 @@ remove_pool(PoolName) ->
             Error
     end.
 
-init([]) ->
+init(Args) ->
     Childrens = [
-        worker(mysql_connection_manager, infinity)
+        worker(mysql_connection_manager, infinity, Args)
     ],
 
     {ok, {{one_for_one, 10, 10}, Childrens}}.
 
-worker(Name, WaitForClose) ->
-    children(Name, WaitForClose, worker).
+worker(Name, WaitForClose, Args) ->
+    children(Name, WaitForClose, worker, Args).
 
-children(Name, WaitForClose, Type) ->
-    {Name, {Name, start_link, []}, permanent, WaitForClose, Type, [Name]}.
+children(Name, WaitForClose, Type, Args) ->
+    {Name, {Name, start_link, Args}, permanent, WaitForClose, Type, [Name]}.

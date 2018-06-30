@@ -7,7 +7,8 @@
 -behaviour(gen_server).
 
 -export([
-    start_link/0,
+    setup/0,
+    start_link/1,
     create_pool/4,
     dispose_pool/1,
     add_connection/2,
@@ -29,10 +30,14 @@
     code_change/3
 ]).
 
--record(state, {pools}).
+-record(state, {app_pid}).
 
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+setup() ->
+    ?ETS_CONNECTIONS_TABLE = ets:new(?ETS_CONNECTIONS_TABLE, [set, named_table, public, {read_concurrency, true}]),
+    ok.
+
+start_link(Args) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [Args], []).
 
 create_pool(PoolName, Size, MaxOverflow, ConnectionOptions) ->
     gen_server:call(?MODULE, {create_pool, PoolName, Size, MaxOverflow, ConnectionOptions}).
@@ -89,26 +94,15 @@ pool_get_statement(PoolName, Stm) ->
 
 %gen_server callbacks
 
-init([]) ->
+init([AppControllerPid]) ->
     process_flag(trap_exit, true),
-    EtsTablesOPts = [set, named_table, public, {read_concurrency, true}],
-    ?ETS_CONNECTIONS_TABLE = ets:new(?ETS_CONNECTIONS_TABLE, EtsTablesOPts),
-    {ok, #state{pools = sets:new()}}.
+    {ok, #state{app_pid = AppControllerPid}}.
 
-handle_call({create_pool, PoolName, PoolSize, MaxOverflow, ConnectionOptions}, _From, #state{pools = P} = State) ->
-    case internal_create_pool(PoolName, PoolSize, MaxOverflow, ConnectionOptions) of
-        {ok, _} = R ->
-            {reply, R, State#state{pools = sets:add_element(PoolName, P)}};
-        Error ->
-            {reply, Error, State}
-    end;
-handle_call({dispose_pool, PoolName}, _From, #state{pools = P} = State) ->
-    case internal_dispose_pool(PoolName) of
-        ok ->
-            {reply, ok, State#state{pools = sets:del_element(PoolName, P)}};
-        Error ->
-            {reply, Error, State}
-    end;
+handle_call({create_pool, PoolName, PoolSize, MaxOverflow, ConnectionOptions}, _From, #state{app_pid = AppPid} = State) ->
+    Response = internal_create_pool(PoolName, PoolSize, MaxOverflow, ConnectionOptions, AppPid),
+    {reply, Response, State};
+handle_call({dispose_pool, PoolName}, _From, State) ->
+    {reply, internal_dispose_pool(PoolName), State};
 handle_call(Request, _From, State) ->
     ?ERROR_MSG("unexpected request: ~p", [Request]),
     {reply, ok, State}.
@@ -121,15 +115,7 @@ handle_info(Info, State) ->
     ?ERROR_MSG("unexpected info message: ~p", [Info]),
     {noreply, State}.
 
-terminate(Reason, #state{pools = Pools}) ->
-    ?INFO_MSG("mysql_connection_manager will stop with reason: ~p...", [Reason]),
-
-    Fun = fun(P) ->
-        ?INFO_MSG("mysql_connection_manager remove pool: ~p", [P]),
-        map_connections(P, fun(C) -> mysql_connection:stop(C) end),
-        internal_dispose_pool(P)
-    end,
-    lists:foreach(Fun, sets:to_list(Pools)),
+terminate(_Reason, _Pools) ->
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -137,9 +123,16 @@ code_change(_OldVsn, State, _Extra) ->
 
 % internals
 
-internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions) ->
+internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions, AppPid) ->
     try
-        PoolName = ets:new(PoolName, [set, named_table, public, {read_concurrency, true}]),
+        PoolName = ets:new(PoolName, [
+            set,
+            named_table,
+            public,
+            {read_concurrency, true},
+            {heir, AppPid, ok}
+        ]),
+
         PoolArgs = [
             {max_overflow, MaxOverflow},
             {size, Size},
@@ -150,7 +143,7 @@ internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions) ->
         mysql_pool_sup:add_pool(PoolName, ChildSpecs)
     catch
         _:Error ->
-            ?ERROR_MSG("creating pool: ~p failed with error: ~p stack: ~p", [PoolName, Error, erlang:get_stacktrace()]),
+            ?ERROR_MSG("creating pool: ~p failed with error: ~p", [PoolName, Error]),
             Error
     end.
 

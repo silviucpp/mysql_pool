@@ -8,17 +8,19 @@
 ]).
 
 start(_StartType, _StartArgs) ->
-
-    {ok, Pid} = mysql_pool_sup:start_link(),
-
-    case mysql_utils:env(pools) of
-        {ok, Pools} ->
-            load_pools(Pools);
-        _ ->
-            ok
-    end,
-
-    {ok, Pid}.
+    ok = mysql_connection_manager:setup(),
+    case mysql_pool_sup:start_link(self()) of
+        {ok, _} = Response ->
+            case mysql_utils:env(pools) of
+                {ok, Pools} ->
+                    load_pools(Pools);
+                _ ->
+                    ok
+            end,
+            Response;
+        Error ->
+            Error
+    end.
 
 stop(_State) ->
     ok.
