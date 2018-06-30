@@ -3,6 +3,7 @@
 -behaviour(gen_server).
 
 -export([
+
     start_link/1,
     get_pid/1,
 
@@ -16,7 +17,11 @@
     code_change/3
 ]).
 
--record(state, {pool_name, connection_pid, connection_args}).
+-record(state, {
+    pool_name,
+    connection_pid,
+    connection_args
+}).
 
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
@@ -36,7 +41,7 @@ init([PoolName, Args]) ->
 
     {ok, #state{connection_args = Args, pool_name = PoolName, connection_pid = ConnectionPid}}.
 
-handle_call(get_connection_pid, _From, State=#state{connection_pid =Pid}) ->
+handle_call(get_connection_pid, _From, #state{connection_pid = Pid} = State) ->
     case Pid of
         undefined ->
             case get_connection(State#state.pool_name, State#state.connection_args) of
@@ -54,14 +59,19 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Request, State) ->
     {noreply, State}.
 
-handle_info({'EXIT', Pid, _}, State=#state{connection_pid =Pid}) ->
-    mysql_connection_manager:remove_connection(Pid),
+handle_info({'EXIT', ConnectionPid, _}, #state{connection_pid = ConnectionPid} = State) ->
+    mysql_connection_manager:remove_connection(ConnectionPid),
     {noreply, State#state{connection_pid = undefined}};
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(_Reason, _State) ->
-    ok.
+terminate(_Reason, #state{connection_pid = ConnectionPid}) ->
+    case ConnectionPid of
+        undefined ->
+            ok;
+        _ ->
+            mysql_connection_manager:remove_connection(ConnectionPid)
+    end.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
