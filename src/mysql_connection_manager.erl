@@ -124,33 +124,33 @@ code_change(_OldVsn, State, _Extra) ->
 % internals
 
 internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions, AppPid) ->
-    try
-        PoolName = ets:new(PoolName, [
-            set,
-            named_table,
-            public,
-            {read_concurrency, true},
-            {heir, AppPid, ok}
-        ]),
+    case mysql_pool_sup:has_pool(PoolName) of
+        false ->
+            try
+                PoolName = ets:new(PoolName, [set, named_table, public, {read_concurrency, true}, {heir, AppPid, ok}]),
 
-        PoolArgs = [
-            {max_overflow, MaxOverflow},
-            {size, Size},
-            {name, {local, PoolName}},
-            {worker_module, mysql_connection_proxy}
-        ],
-        ChildSpecs = poolboy:child_spec(PoolName, PoolArgs, [PoolName, ConnectionOptions]),
-        mysql_pool_sup:add_pool(PoolName, ChildSpecs)
-    catch
-        _:Error ->
-            ?ERROR_MSG("creating pool: ~p failed with error: ~p", [PoolName, Error]),
-            Error
+                PoolArgs = [
+                    {max_overflow, MaxOverflow},
+                    {size, Size},
+                    {name, {local, PoolName}},
+                    {worker_module, mysql_connection_proxy}
+                ],
+                ChildSpecs = poolboy:child_spec(PoolName, PoolArgs, [PoolName, ConnectionOptions]),
+                mysql_pool_sup:add_pool(PoolName, ChildSpecs)
+            catch
+                _:Error ->
+                    ?ERROR_MSG("creating pool: ~p failed with error: ~p", [PoolName, Error]),
+                    Error
+            end;
+        _ ->
+            {error, already_started}
     end.
 
 internal_dispose_pool(PoolName) ->
-    case catch ets:delete(PoolName) of
+    case mysql_pool_sup:has_pool(PoolName) of
         true ->
+            true = ets:delete(PoolName),
             mysql_pool_sup:remove_pool(PoolName);
-        Error ->
-            Error
+        _ ->
+            {error, not_found}
     end.

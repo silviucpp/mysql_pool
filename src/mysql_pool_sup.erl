@@ -6,19 +6,15 @@
     start_link/1,
     add_pool/2,
     remove_pool/1,
+    has_pool/1,
     init/1
 ]).
 
 start_link(AppPid) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, [AppPid]).
 
-add_pool(PoolName, ChildSpecs) ->
-    case supervisor:start_child(?MODULE, ChildSpecs) of
-        {error, already_present} ->
-            supervisor:restart_child(?MODULE, PoolName);
-        Other ->
-            Other
-    end.
+add_pool(_PoolName, ChildSpecs) ->
+    supervisor:start_child(?MODULE, ChildSpecs).
 
 remove_pool(PoolName) ->
     case supervisor:terminate_child(?MODULE, PoolName) of
@@ -26,6 +22,14 @@ remove_pool(PoolName) ->
             supervisor:delete_child(?MODULE, PoolName);
         Error ->
             Error
+    end.
+
+has_pool(PoolName) ->
+    case supervisor:get_childspec(?MODULE, PoolName) of
+        {ok, _} ->
+            true;
+        {error, not_found} ->
+            false
     end.
 
 init(Args) ->
