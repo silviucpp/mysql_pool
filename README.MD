@@ -19,7 +19,7 @@ Using `rebar`, put this in your `rebar.config`:
 
 ```erlang
 {deps, [
-    {mysql_pool, ".*", {git, "https://github.com/silviucpp/mysql_pool.git", {tag, "1.1"}}}
+    {mysql_pool, ".*", {git, "https://github.com/silviucpp/mysql_pool.git", {tag, "1.6"}}}
 ]}.
 ```
 
@@ -85,7 +85,7 @@ Also it provides few additional methods like: `query_opt/3, query_opt/4, query_o
 
 Beside this the `mysql_pool` comes with the following methods
 
-- `add_pool(PoolName, Size, ConnectionOptions)` - Add a pool at runtime with a specific size and connection options
+- `add_pool(PoolName, Size, MaxOverflow, ConnectionOptions)` - Add a pool at runtime with a specific size and connection options
 - `remove_pool(PoolName)` - Remove a pool at runtime
 - `prepare(PoolName, Stm, Query)` - Add a prepare statement for a pool. The statement will be added to all existing connections and also on all new connections that might be created in the future
 - `unprepare(PoolName, Stm)` - Remove a prepare statement from a pool. The statement will be unprepare on all existing connections as well.
