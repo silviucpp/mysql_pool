@@ -4,36 +4,65 @@
 %%      (`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 %%       `name` VARCHAR(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE = InnoDB
 
+-define(QUERY, <<"SELECT id FROM users WHERE id = ?">>).
+
 -export([
     bench/2,
-    bench/3
+    bench/4
 ]).
 
 bench(Number, Concurrency) ->
-    bench(Number, Concurrency, false).
+    bench(Number, Concurrency, pool, false).
 
-bench(Number, Concurrency, Profile) ->
+bench(Number, Concurrency, Mode, Profile) ->
     case mysql_pool:start() of
         ok ->
-            mysql_pool:prepare(mypool, get_accounts, <<"SELECT id, name FROM users WHERE id = ?">>);
+            mysql_pool:prepare(mypool, get_accounts, ?QUERY);
         _ ->
             ok
     end,
 
     Self = self(),
-    List = lists:seq(1, Concurrency),
     LoopNumbers = Number div Concurrency,
 
-    Fun = fun() -> {ok, _, _} = mysql_pool:execute(mypool, get_accounts, [1]) end,
+    {List, BenchFun} = case Mode of
+        pool ->
+            ExecFun = fun() -> {ok, _, _} = mysql_pool:execute(mypool, get_accounts, [1]) end,
+            PList = lists:seq(1, Concurrency),
+            PFun = fun(_) -> loop(LoopNumbers, ExecFun) end,
+            {PList, PFun};
+        connection ->
+            ConnectionOptions = bench_connection_options(),
+            CList0 = lists:seq(1, Concurrency),
+            CList = lists:map(fun(_) -> bench_connection(ConnectionOptions) end, CList0),
+            CFun = fun(Pid) -> bench_connection_loop(LoopNumbers, Pid) end,
+            {CList, CFun}
+    end,
 
     profilers_start(Profile),
     A = os:timestamp(),
-    Pids = [spawn_link(fun() -> loop(LoopNumbers, Fun), Self ! {self(), done} end) || _ <- List],
+    Pids = [spawn_link(fun() -> BenchFun(X), Self ! {self(), done} end) || X <- List],
     [receive {Pid, done} -> ok end || Pid <- Pids],
     B = os:timestamp(),
     profiler_stop(Profile),
 
     print(Number, A, B).
+
+bench_connection(ConnectionOptions) ->
+    {ok, Pid} = mysql_connection:start_link(ConnectionOptions),
+    {ok, _} = mysql_connection:prepare(Pid, get_accounts, ?QUERY),
+    Pid.
+
+bench_connection_options() ->
+    {ok, Pools} = mysql_utils:env(pools),
+    MyPool = mysql_utils:lookup(mypool, Pools),
+    mysql_utils:lookup(connection_options, MyPool).
+
+bench_connection_loop(0, _ConnectionPid) ->
+    ok;
+bench_connection_loop(Nr, ConnectionPid) ->
+    {ok, _, _} = mysql_connection:execute(ConnectionPid, get_accounts, [1]),
+    bench_connection_loop(Nr-1, ConnectionPid).
 
 print(Num, A, B) ->
     Microsecs = timer:now_diff(B, A),
