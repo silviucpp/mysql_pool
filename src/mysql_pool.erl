@@ -94,83 +94,79 @@ unprepare(PoolName, Stm) ->
     end.
 
 -spec query(pool_id(), binary()) ->
-    term().
+    mysql:query_result().
 
 query(PoolName, Query) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
 
--spec query(pool_id(), binary(), list()|integer()) ->
-    term().
+-spec query(pool_id(), binary(), list()|timeout()) ->
+    mysql:query_result().
 
 query(PoolName, Query, Params) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params) end).
 
--spec query(pool_id(), binary(), list(), integer()) ->
-    term().
+-spec query(pool_id(), binary(), list(), timeout()) ->
+    mysql:query_result().
 
 query(PoolName, Query, Params, Timeout) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query, Params, Timeout) end, Timeout).
 
 -spec query_opt(pool_id(), binary(), opt_flag()) ->
-    term().
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
 
 query_opt(PoolName, Query, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, OptionFlag) end).
 
--spec query_opt(pool_id(), binary(), list()|integer(), opt_flag()) ->
-    term().
+-spec query_opt(pool_id(), binary(), list()|timeout(), opt_flag()) ->
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
 
 query_opt(PoolName, Query, Params, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, OptionFlag) end).
 
--spec query_opt(pool_id(), binary(), list(), integer(), opt_flag()) ->
-    term().
+-spec query_opt(pool_id(), binary(), list(), timeout(), opt_flag()) ->
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
 
 query_opt(PoolName, Query, Params, Timeout, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end, Timeout).
 
 -spec execute(pool_id(), stm_id(), list()) ->
-    term().
+   mysql:query_result() | {error, not_prepared}.
 
 execute(PoolName, StatementRef, Params) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params) end).
 
--spec execute(pool_id(), stm_id(), list(), integer()) ->
-    term().
+-spec execute(pool_id(), stm_id(), list(), timeout()) ->
+    mysql:query_result() | {error, not_prepared}.
 
 execute(PoolName, StatementRef, Params, Timeout) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute(MysqlConn, StatementRef, Params, Timeout) end, Timeout).
 
 -spec execute_opt(pool_id(), stm_id(), list(), opt_flag()) ->
-    term().
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()} | {error, not_prepared}.
 
 execute_opt(PoolName, StatementRef, Params, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, OptionFlag) end).
 
--spec execute_opt(pool_id(), stm_id(), list(), integer(), opt_flag()) ->
-    term().
+-spec execute_opt(pool_id(), stm_id(), list(), timeout(), opt_flag()) ->
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()} | {error, not_prepared}.
 
 execute_opt(PoolName, StatementRef, Params, Timeout, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:execute_opt(MysqlConn, StatementRef, Params, Timeout, OptionFlag) end, Timeout).
 
 -spec transaction(pool_id(), fun()) ->
-    term().
+    {atomic, term()} | {aborted, term()} | {error, term()}.
 
-transaction(PoolName, TransactionFun) when is_function(TransactionFun, 1) ->
-    poolboy_transaction(PoolName, fun(MysqlConn) ->
-        mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn], infinity)
-    end).
+transaction(PoolName, TransactionFun) ->
+    transaction(PoolName, TransactionFun, [], infinity).
 
 -spec transaction(pool_id(), fun(), list()) ->
-    term().
+    {atomic, term()} | {aborted, term()} | {error, term()}.
 
-transaction(PoolName, TransactionFun, Args) when is_function(TransactionFun, length(Args) + 1) ->
-    poolboy_transaction(PoolName, fun(MysqlConn) ->
-        mysql_connection:transaction(MysqlConn, TransactionFun, [MysqlConn | Args], infinity)
-    end).
+transaction(PoolName, TransactionFun, Args) ->
+    transaction(PoolName, TransactionFun, Args, infinity).
 
--spec transaction(pool_id(), fun(), list(), integer()|infinity) ->
-    term().
+-spec transaction(pool_id(), fun(), list(), non_neg_integer()|infinity) ->
+    {atomic, term()} | {aborted, term()} | {error, term()}.
 
 transaction(PoolName, TransactionFun, Args, Retries) when is_function(TransactionFun, length(Args) + 1) ->
     poolboy_transaction(PoolName, fun(MysqlConn) ->
