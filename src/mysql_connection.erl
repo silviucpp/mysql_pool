@@ -77,13 +77,22 @@ in_transaction(Conn) ->
     mysql:in_transaction(Conn).
 
 transaction(Conn, Fun) ->
-    mysql:transaction(Conn, Fun).
+    transaction(Conn, Fun, [], infinity).
 
 transaction(Conn, Fun, Retries) ->
-    mysql:transaction(Conn, Fun, Retries).
+    transaction(Conn, Fun, [], Retries).
 
 transaction(Conn, Fun, Args, Retries) ->
-    mysql:transaction(Conn, Fun, Args, Retries).
+    case catch mysql:transaction(Conn, Fun, Args, Retries) of
+        {atomic, _} = S ->
+            S;
+        {aborted, _} = A ->
+            A;
+        Error ->
+            ?ERROR_MSG("mysql:transaction unexpected response for connection: ~p error: ~p", [Conn, Error]),
+            stop(Conn),
+            Error
+    end.
 
 encode(Conn, Term) ->
     mysql:encode(Conn, Term).
@@ -131,7 +140,7 @@ execute_stm(Pid, Statement, Params, Timeout) ->
     end.
 
 reprepare_evicted_stm(PoolName, Pid, Stm) ->
-    ?INFO_MSG("reprepare evicted statement: ~p", [Stm]),
+    ?WARNING_MSG("reprepare evicted statement: ~p", [Stm]),
 
     case mysql_connection_manager:pool_get_statement(PoolName, Stm) of
         null ->
