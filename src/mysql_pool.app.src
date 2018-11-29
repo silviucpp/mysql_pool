@@ -1,6 +1,6 @@
 {application, mysql_pool, [
     {description, "mysql-otp pool based on poolboy"},
-    {vsn, "1.7"},
+    {vsn, "1.8"},
     {registered, []},
     {applications, [
         kernel,
