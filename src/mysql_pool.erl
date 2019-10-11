@@ -13,11 +13,15 @@
     query/2,
     query/3,
     query/4,
-    execute/3,
-    execute/4,
     query_opt/3,
     query_opt/4,
     query_opt/5,
+    p_query/3,
+    p_query/4,
+    p_query_opt/4,
+    p_query_opt/5,
+    execute/3,
+    execute/4,
     execute_opt/4,
     execute_opt/5,
     transaction/2,
@@ -99,7 +103,7 @@ unprepare(PoolName, Stm) ->
 query(PoolName, Query) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query(MysqlConn, Query) end).
 
--spec query(pool_id(), binary(), list()|timeout()) ->
+-spec query(pool_id(), binary(), list()) ->
     mysql:query_result().
 
 query(PoolName, Query, Params) ->
@@ -117,7 +121,7 @@ query(PoolName, Query, Params, Timeout) ->
 query_opt(PoolName, Query, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, OptionFlag) end).
 
--spec query_opt(pool_id(), binary(), list()|timeout(), opt_flag()) ->
+-spec query_opt(pool_id(), binary(), list(), opt_flag()) ->
     {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
 
 query_opt(PoolName, Query, Params, OptionFlag) ->
@@ -128,6 +132,30 @@ query_opt(PoolName, Query, Params, OptionFlag) ->
 
 query_opt(PoolName, Query, Params, Timeout, OptionFlag) ->
     poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end, Timeout).
+
+-spec p_query(pool_id(), binary(), list()) ->
+    mysql:query_result().
+
+p_query(PoolName, Query, Params) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:p_query(MysqlConn, Query, Params) end).
+
+-spec p_query(pool_id(), binary(), list(), timeout()) ->
+    mysql:query_result().
+
+p_query(PoolName, Query, Params, Timeout) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:p_query(MysqlConn, Query, Params, Timeout) end, Timeout).
+
+-spec p_query_opt(pool_id(), binary(), list(), opt_flag()) ->
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
+
+p_query_opt(PoolName, Query, Params, OptionFlag) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:p_query_opt(MysqlConn, Query, Params, OptionFlag) end).
+
+-spec p_query_opt(pool_id(), binary(), list(), timeout(), opt_flag()) ->
+    {mysql:query_result(), neg_integer()} | {mysql:query_result(), neg_integer(), non_neg_integer()}.
+
+p_query_opt(PoolName, Query, Params, Timeout, OptionFlag) ->
+    poolboy_transaction(PoolName, fun(MysqlConn) -> mysql_connection:p_query_opt(MysqlConn, Query, Params, Timeout, OptionFlag) end, Timeout).
 
 -spec execute(pool_id(), stm_id(), list()) ->
    mysql:query_result() | {error, not_prepared}.

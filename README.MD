@@ -83,6 +83,10 @@ Also it provides few additional methods like: `query_opt/3, query_opt/4, query_o
 - insert_id - will transform all `ok` results into `{ok, LastInsertId}`
 - both - will transform all `ok` results into `{ok, {NumberOfAffectedRows, LastInsertId}}`
 
+Another difference is that all queries via `query/2`, `query/3`, `query/4` are done via non prepared statements. In the original `mysql-otp` in case
+the params list is not empty the queries are executed via prepared statements where query is used as id. For same functionality you can use
+`p_query/3` and `p_query/4`.
+
 Beside this the `mysql_pool` comes with the following methods
 
 - `add_pool(PoolName, Size, MaxOverflow, ConnectionOptions)` - Add a pool at runtime with a specific size and connection options

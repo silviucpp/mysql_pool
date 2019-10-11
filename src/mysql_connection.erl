@@ -6,14 +6,20 @@
 
 -export([
     start_link/1, stop/1,
+
     query/2, query/3, query/4,
-    execute/3, execute/4,
     query_opt/3, query_opt/4, query_opt/5,
+
+    p_query/3, p_query/4,
+    p_query_opt/4, p_query_opt/5,
+
+    execute/3, execute/4,
     execute_opt/4, execute_opt/5,
+
+    transaction/2, transaction/3, transaction/4, in_transaction/1,
+
     prepare/2, prepare/3, unprepare/2,
-    warning_count/1, affected_rows/1, autocommit/1, insert_id/1,
-    encode/2, in_transaction/1,
-    transaction/2, transaction/3, transaction/4
+    warning_count/1, affected_rows/1, autocommit/1, insert_id/1, encode/2
 ]).
 
 start_link(Options) ->
@@ -22,23 +28,51 @@ start_link(Options) ->
 stop(Conn) ->
     exit(Conn, kill).
 
+% execute non prepared statements queries
+
 query(Conn, Query) ->
     mysql:query(Conn, Query).
 
 query(Conn, Query, Params) ->
-    mysql:query(Conn, Query, Params).
+    case build_query_string(Conn, Query, Params) of
+        {ok, Q} ->
+            mysql:query(Conn, Q);
+        Error ->
+            Error
+    end.
 
 query(Conn, Query, Params, Timeout) ->
-    mysql:query(Conn, Query, Params, Timeout).
+    case build_query_string(Conn, Query, Params) of
+        {ok, Q} ->
+            mysql:query(Conn, Q, Timeout);
+        Error ->
+            Error
+    end.
 
 query_opt(Conn, Query, OptionFlag) ->
-    transform_result(Conn, mysql:query(Conn, Query), OptionFlag).
+    transform_result(Conn, query(Conn, Query), OptionFlag).
 
 query_opt(Conn, Query, Params, OptionFlag) ->
-    transform_result(Conn, mysql:query(Conn, Query, Params), OptionFlag).
+    transform_result(Conn, query(Conn, Query, Params), OptionFlag).
 
 query_opt(Conn, Query, Params, Timeout, OptionFlag) ->
-    transform_result(Conn, mysql:query(Conn, Query, Params, Timeout), OptionFlag).
+    transform_result(Conn, query(Conn, Query, Params, Timeout), OptionFlag).
+
+% execute queries via prepared statements (id = query)
+
+p_query(Conn, Query, Params) ->
+    mysql:query(Conn, Query, Params).
+
+p_query(Conn, Query, Params, Timeout) ->
+    mysql:query(Conn, Query, Params, Timeout).
+
+p_query_opt(Conn, Query, Params, OptionFlag) ->
+    transform_result(Conn, p_query(Conn, Query, Params), OptionFlag).
+
+p_query_opt(Conn, Query, Params, Timeout, OptionFlag) ->
+    transform_result(Conn, p_query(Conn, Query, Params, Timeout), OptionFlag).
+
+% execute prepared statements by id
 
 execute(Conn, StatementRef, Params) ->
     execute_stm(Conn, StatementRef, Params, null).
@@ -52,29 +86,7 @@ execute_opt(Conn, StatementRef, Params, OptionFlag) ->
 execute_opt(Conn, StatementRef, Params, Timeout, OptionFlag) ->
     transform_result(Conn, execute_stm(Conn, StatementRef, Params, Timeout), OptionFlag).
 
-prepare(Conn, Query) ->
-    mysql:prepare(Conn, Query).
-
-prepare(Conn, Name, Query) ->
-    mysql:prepare(Conn, Name, Query).
-
-unprepare(Conn, StatementRef) ->
-    mysql:unprepare(Conn, StatementRef).
-
-warning_count(Conn) ->
-    mysql:warning_count(Conn).
-
-affected_rows(Conn) ->
-    mysql:affected_rows(Conn).
-
-autocommit(Conn) ->
-    mysql:autocommit(Conn).
-
-insert_id(Conn) ->
-    mysql:insert_id(Conn).
-
-in_transaction(Conn) ->
-    mysql:in_transaction(Conn).
+% transactions
 
 transaction(Conn, Fun) ->
     transaction(Conn, Fun, [], infinity).
@@ -94,10 +106,60 @@ transaction(Conn, Fun, Args, Retries) ->
             Error
     end.
 
+in_transaction(Conn) ->
+    mysql:in_transaction(Conn).
+
+% prepare/unprepare statements
+
+prepare(Conn, Query) ->
+    mysql:prepare(Conn, Query).
+
+prepare(Conn, Name, Query) ->
+    mysql:prepare(Conn, Name, Query).
+
+unprepare(Conn, StatementRef) ->
+    mysql:unprepare(Conn, StatementRef).
+
+% other
+
+warning_count(Conn) ->
+    mysql:warning_count(Conn).
+
+affected_rows(Conn) ->
+    mysql:affected_rows(Conn).
+
+autocommit(Conn) ->
+    mysql:autocommit(Conn).
+
+insert_id(Conn) ->
+    mysql:insert_id(Conn).
+
 encode(Conn, Term) ->
     mysql:encode(Conn, Term).
 
 % internal methods
+
+build_query_string(Conn, Q, P) ->
+    QList = re:split(Q, <<"\\?">>, []),
+
+    case length(QList) =/= length(P) +1 of
+        true ->
+            {error, <<"Missmatch argument list">>};
+        _ ->
+            build_query_string(QList, P, gen_server:call(Conn, backslash_escapes_enabled), [])
+    end.
+
+build_query_string([H1|T1], [H2|T2], BackslashEscapeEnabled, Acc) ->
+    build_query_string(T1, T2, BackslashEscapeEnabled, [term_encode(H2, BackslashEscapeEnabled), H1 |Acc]);
+build_query_string([H1], [], _BackslashEscapeEnabled, Acc) ->
+    {ok, iolist_to_binary(lists:reverse([H1| Acc]))};
+build_query_string([], [], _BackslashEscapeEnabled, Acc) ->
+    {ok, iolist_to_binary(lists:reverse(Acc))}.
+
+term_encode(V, true) when is_binary(V) orelse is_list(V) ->
+    mysql_encode:encode(mysql_encode:backslash_escape(V));
+term_encode(V, _) ->
+    mysql_encode:encode(V).
 
 transform_result(_Pid, Rs, null) ->
     Rs;
