@@ -34,7 +34,7 @@ query(Conn, Query) ->
     mysql:query(Conn, Query).
 
 query(Conn, Query, Params) ->
-    case build_query_string(Conn, Query, Params) of
+    case build_query_string(Query, Params) of
         {ok, Q} ->
             mysql:query(Conn, Q);
         Error ->
@@ -42,7 +42,7 @@ query(Conn, Query, Params) ->
     end.
 
 query(Conn, Query, Params, Timeout) ->
-    case build_query_string(Conn, Query, Params) of
+    case build_query_string(Query, Params) of
         {ok, Q} ->
             mysql:query(Conn, Q, Timeout);
         Error ->
@@ -139,26 +139,26 @@ encode(Conn, Term) ->
 
 % internal methods
 
-build_query_string(Conn, Q, P) ->
+build_query_string(Q, P) ->
     QList = re:split(Q, <<"\\?">>, []),
 
     case length(QList) =/= length(P) +1 of
         true ->
             {error, <<"Missmatch argument list">>};
         _ ->
-            build_query_string(QList, P, gen_server:call(Conn, backslash_escapes_enabled), [])
+            build_query_string(QList, P, [])
     end.
 
-build_query_string([H1|T1], [H2|T2], BackslashEscapeEnabled, Acc) ->
-    build_query_string(T1, T2, BackslashEscapeEnabled, [term_encode(H2, BackslashEscapeEnabled), H1 |Acc]);
-build_query_string([H1], [], _BackslashEscapeEnabled, Acc) ->
+build_query_string([H1|T1], [H2|T2], Acc) ->
+    build_query_string(T1, T2, [term_encode(H2), H1 |Acc]);
+build_query_string([H1], [], Acc) ->
     {ok, iolist_to_binary(lists:reverse([H1| Acc]))};
-build_query_string([], [], _BackslashEscapeEnabled, Acc) ->
+build_query_string([], [], Acc) ->
     {ok, iolist_to_binary(lists:reverse(Acc))}.
 
-term_encode(V, true) when is_binary(V) orelse is_list(V) ->
-    mysql_encode:encode(mysql_encode:backslash_escape(V));
-term_encode(V, _) ->
+term_encode(V) when is_binary(V) orelse is_list(V) ->
+    mysql_utils:quote(V);
+term_encode(V) ->
     mysql_encode:encode(V).
 
 transform_result(_Pid, Rs, null) ->

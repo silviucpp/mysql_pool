@@ -7,7 +7,8 @@
     replace/3,
     delete/2,
     as_json/1,
-    as_json/2
+    as_json/2,
+    quote/1
 ]).
 
 env(Key) ->
@@ -49,3 +50,31 @@ json_val(Value) when is_tuple(Value) ->
     end;
 json_val(Value) ->
     Value.
+
+%% Quote a string or binary value so that it can be included safely in a MySQL query.
+%% - 34 is $"
+%% - 39 is $'
+
+quote(String) when is_list(String) ->
+    [39 | lists:reverse([39 | quote(String, [])])];
+quote(Bin) when is_binary(Bin) ->
+    list_to_binary(quote(binary_to_list(Bin))).
+
+quote([], Acc) ->
+    Acc;
+quote([0 | Rest], Acc) ->
+    quote(Rest, [$0, $\\ | Acc]);
+quote([10 | Rest], Acc) ->
+    quote(Rest, [$n, $\\ | Acc]);
+quote([13 | Rest], Acc) ->
+    quote(Rest, [$r, $\\ | Acc]);
+quote([$\\ | Rest], Acc) ->
+    quote(Rest, [$\\ , $\\ | Acc]);
+quote([39 | Rest], Acc) ->
+    quote(Rest, [39, $\\ | Acc]);
+quote([34 | Rest], Acc) ->
+    quote(Rest, [34, $\\ | Acc]);
+quote([26 | Rest], Acc) ->
+    quote(Rest, [$Z, $\\ | Acc]);
+quote([C | Rest], Acc) ->
+    quote(Rest, [C | Acc]).
