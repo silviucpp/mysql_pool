@@ -156,8 +156,17 @@ build_query_string([H1], [], Acc) ->
 build_query_string([], [], Acc) ->
     {ok, iolist_to_binary(lists:reverse(Acc))}.
 
-term_encode(V) when is_binary(V) orelse is_list(V) ->
-    mysql_utils:quote(V);
+term_encode(V) when is_binary(V) ->
+    mysql_utils:quote(unicode:characters_to_binary(binary_to_list(V)));
+term_encode(V) when is_list(V) ->
+    <<"_binary ", (list_to_binary(mysql_utils:quote(V)))/binary>>;
+term_encode({blob, V}) ->
+    case V of
+        null ->
+            mysql_encode:encode(V);
+        _ ->
+            <<"_binary ", (mysql_utils:quote(V))/binary>>
+    end;
 term_encode(V) ->
     mysql_encode:encode(V).
 
