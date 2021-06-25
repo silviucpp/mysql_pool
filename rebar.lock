@@ -2,7 +2,7 @@
 [{<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"lager">>,
   {git,"https://github.com/erlang-lager/lager.git",
-       {ref,"c5447d2d85a0d446d41a79bffe0a6a66bd50c901"}},
+       {ref,"459a3b2cdd9eadd29e5a7ce5c43932f5ccd6eb88"}},
   0},
  {<<"mysql">>,
   {git,"https://github.com/silviucpp/mysql-otp",
