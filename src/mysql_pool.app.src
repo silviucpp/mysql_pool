@@ -1,6 +1,8 @@
 {application, mysql_pool, [
     {description, "mysql-otp pool based on poolboy"},
-    {vsn, "2.0"},
+    {licenses, ["MIT"]},
+    {links,[{"Github","https://github.com/silviucpp/mysql_pool"}]},
+    {vsn, "2.0.0"},
     {registered, []},
     {applications, [
         kernel,
@@ -12,5 +14,16 @@
     ]},
     {included_applications, []},
     {mod, {mysql_pool_app, []}},
-    {env, []}
+    {env, []},
+    {files, [
+        "LICENSE*",
+        "*.MD",
+        "rebar.config",
+        "rebar.lock",
+        "include/*.hrl",
+        "src/*.erl",
+        "src/*.src",
+        "test/*.erl",
+        "test/*.config"
+    ]}
 ]}.
