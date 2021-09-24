@@ -1,6 +1,6 @@
 # mysql_pool
 
-[![Build Status](https://travis-ci.com/silviucpp/mysql_pool.svg?branch=master)](https://travis-ci.com/silviucpp/mysql_pool)
+[![Build Status](https://travis-ci.com/silviucpp/mysql_pool.svg?branch=master)](https://travis-ci.com/github/silviucpp/mysql_pool)
 ![GitHub](https://img.shields.io/github/license/silviucpp/mysql_pool?dummy=unused)
 
 mysql_pool provides connection pooling for [MySQL/OTP][1] using [Poolboy][2]. It contains convenience functions for executing SQL queries on a mysql connection in a pool.
