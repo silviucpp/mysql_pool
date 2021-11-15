@@ -2,7 +2,7 @@
     {description, "mysql-otp pool based on poolboy"},
     {licenses, ["MIT"]},
     {links,[{"Github","https://github.com/silviucpp/mysql_pool"}]},
-    {vsn, "2.0.0"},
+    {vsn, "2.1.0"},
     {registered, []},
     {applications, [
         kernel,

@@ -5,16 +5,7 @@
 
 mysql_pool provides connection pooling for [MySQL/OTP][1] using [Poolboy][2]. It contains convenience functions for executing SQL queries on a mysql connection in a pool.
 
-Use always the methods from `mysql_connection` in case you need to play with a certain connection from the pool. This module has logic to reprepare and execute the query again in case the server evicted a prepare statement. The [MySQL/OTP][1] is not treating this case at this moment.
-
-### Notes
-
-`mysql_pool` it's using a fork of `mysql-otp` which it's slightly different having the following changes:
-
-- [All floats are encoded as decimals withg 8 digit precision][6]
-
-In case you want to use the master branch of `mysql-otp` or a specific version change this in `rebar.config` ot bind to the version you want.
-The interfaces are 100 % compatible so should work without any problem.
+Always Use the methods from `mysql_connection` in case you need to play with a certain connection from the pool. This module has logic to reprepare and execute the query again in case the server evicted a prepare statement. The [MySQL/OTP][1] is not treating this case at this moment.
 
 ### Getting starting:
 
@@ -67,8 +58,11 @@ Each pool has the following settings:
     - `{user, User}` - Username used to connect to the database
     - `{password, Password}` - Password used to connect to the database
     - `{database, Database}` - The name of the database AKA schema to use
+    - `{connect_mode, synchronous | asynchronous | lazy}` - Connection mode.
+    - `{allowed_local_paths, [binary()]}` - This option allows you to specify a list of directories or individual files on the client machine which the server may request, for example when executing a `LOAD DATA LOCAL INFILE' query. Only absolute paths without relative components such as `..' and `.' are allowed.
     - `{connect_timeout, Timeout}` - The maximum time to spend for connecting to the server
     - `{log_warnings, boolean()}` - Whether to fetch warnings and log them using error_logger, default `true`.
+    - `{log_slow_queries, boolean()}` - Whether to log slow queries using error_logger; default false.
     - `{keep_alive, boolean() | timeout()}` - Send ping when unused for a certain time. Possible values are `true`, `false` or `integer() > 0` for an explicit interval in milliseconds. The default is `false`. For `true` a default ping timeout is used.
     - `{prepare, NamedStatements}` - Named prepared statements to be created as soon as the connection is ready. Can be created also at runtime using `mysql_pool:prepare/3`
     - `{queries, Queries}` - Queries to be executed as soon as the connection is ready. Any results are discarded. Typically, this is used for setting time zone and other session variables.
@@ -76,6 +70,10 @@ Each pool has the following settings:
     - `{found_rows, boolean()}` - If set to true, the connection will be established with CLIENT_FOUND_ROWS capability. affected_rows/1 will now return the number of found rows, not the number of rows changed by the query
     - `{query_cache_time, Timeout}` - The minimum number of milliseconds to cache prepared statements used for parametrized queries with `query/3`.
     - `{tcp_options, Options}` - Additional options for `gen_tcp:connect/3`. You may want to set `{recbuf, Size}` and `{sndbuf, Size}` if you send or receive more than the default (typically 8K) per query.
+    - `{ssl, Options}` - Additional options for `ssl:connect/3`.
+    - `{float_as_decimal, boolean() | non_neg_integer()}` - Encode floats as decimals when sending parameters for parametrized queries and prepared statements to the server. This prevents float rounding and truncation errors from happening on the server side. If a number is specified, the float is rounded to this number of decimals. Default is `{float_as_decimal, 8}`
+
+Note: Default value for `float_as_decimal` is `{float_as_decimal, 8}` instead `false` (the default from [mysql-otp](1)).
 
 ### API
 
