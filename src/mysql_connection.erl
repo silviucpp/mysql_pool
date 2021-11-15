@@ -22,7 +22,14 @@
     warning_count/1, affected_rows/1, autocommit/1, insert_id/1, encode/2
 ]).
 
-start_link(Options) ->
+start_link(Options0) ->
+    Options = case mysql_utils:lookup(float_as_decimal, Options0, null) of
+        null ->
+            [{float_as_decimal, 8} | Options0];
+        _ ->
+            Options0
+    end,
+
     mysql:start_link(Options).
 
 stop(Conn) ->
