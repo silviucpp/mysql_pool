@@ -108,7 +108,7 @@ transaction(Conn, Fun, Args, Retries) ->
         {aborted, _} = A ->
             A;
         Error ->
-            ?ERROR_MSG("mysql:transaction unexpected response for connection: ~p error: ~p", [Conn, Error]),
+            ?LOG_ERROR("mysql:transaction unexpected response for connection: ~p error: ~p", [Conn, Error]),
             stop(Conn),
             Error
     end.
@@ -210,7 +210,7 @@ execute_stm(Pid, Statement, Params, Timeout) ->
                 ok ->
                     execute_stm(Pid, Statement, Params, Timeout);
                 Error ->
-                    ?ERROR_MSG("failed to reprepare evicted statement: ~p", [Error]),
+                    ?LOG_ERROR("failed to reprepare evicted statement: ~p", [Error]),
                     Rs
             end;
         _ ->
@@ -218,7 +218,7 @@ execute_stm(Pid, Statement, Params, Timeout) ->
     end.
 
 reprepare_evicted_stm(PoolName, Pid, Stm) ->
-    ?WARNING_MSG("reprepare evicted statement: ~p", [Stm]),
+    ?LOG_WARNING("reprepare evicted statement: ~p", [Stm]),
 
     case mysql_connection_manager:pool_get_statement(PoolName, Stm) of
         null ->

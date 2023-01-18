@@ -1,12 +1,6 @@
-{"1.2.0",
-[{<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
- {<<"lager">>,
-  {git,"https://github.com/erlang-lager/lager.git",
-       {ref,"459a3b2cdd9eadd29e5a7ce5c43932f5ccd6eb88"}},
-  0},
- {<<"mysql">>,
+[{<<"mysql">>,
   {git,"https://github.com/mysql-otp/mysql-otp.git",
-       {ref,"927fec2a96d1702d208b659e56c8e4fc331bf2f4"}},
+       {ref,"6b089f9c273771310d3a491fa33de0c0eddf0a33"}},
   0},
  {<<"plists">>,
   {git,"https://github.com/silviucpp/plists.git",
@@ -15,10 +9,4 @@
  {<<"poolboy">>,
   {git,"https://github.com/devinus/poolboy.git",
        {ref,"29be47db8c2be38b18c908e43a80ebb7b9b6116b"}},
-  0}]}.
-[
-{pkg_hash,[
- {<<"goldrush">>, <<"F06E5D5F1277DA5C413E84D5A2924174182FB108DABB39D5EC548B27424CD106">>}]},
-{pkg_hash_ext,[
- {<<"goldrush">>, <<"99CB4128CFFCB3227581E5D4D803D5413FA643F4EB96523F77D9E6937D994CEB">>}]}
-].
+  0}].

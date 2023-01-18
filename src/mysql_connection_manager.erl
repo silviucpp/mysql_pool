@@ -50,7 +50,7 @@ add_connection(Pid, PoolName) ->
         true ->
             ok;
         Error ->
-            ?ERROR_MSG("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
+            ?LOG_ERROR("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
             Error
     end.
 
@@ -59,7 +59,7 @@ remove_connection(Pid) ->
         true ->
             ok;
         Error ->
-            ?ERROR_MSG("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
+            ?LOG_ERROR("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
             Error
     end.
 
@@ -104,15 +104,15 @@ handle_call({create_pool, PoolName, PoolSize, MaxOverflow, ConnectionOptions}, _
 handle_call({dispose_pool, PoolName}, _From, State) ->
     {reply, internal_dispose_pool(PoolName), State};
 handle_call(Request, _From, State) ->
-    ?ERROR_MSG("unexpected request: ~p", [Request]),
+    ?LOG_ERROR("unexpected request: ~p", [Request]),
     {reply, ok, State}.
 
 handle_cast(Request, State) ->
-    ?ERROR_MSG("unexpected cast message: ~p", [Request]),
+    ?LOG_ERROR("unexpected cast message: ~p", [Request]),
     {noreply, State}.
 
 handle_info(Info, State) ->
-    ?ERROR_MSG("unexpected info message: ~p", [Info]),
+    ?LOG_ERROR("unexpected info message: ~p", [Info]),
     {noreply, State}.
 
 terminate(_Reason, _Pools) ->
@@ -139,7 +139,7 @@ internal_create_pool(PoolName, Size, MaxOverflow, ConnectionOptions, AppPid) ->
                 mysql_pool_sup:add_pool(PoolName, ChildSpecs)
             catch
                 _:Error ->
-                    ?ERROR_MSG("creating pool: ~p failed with error: ~p", [PoolName, Error]),
+                    ?LOG_ERROR("creating pool: ~p failed with error: ~p", [PoolName, Error]),
                     Error
             end;
         _ ->
