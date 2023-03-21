@@ -1,6 +1,6 @@
 [{<<"mysql">>,
   {git,"https://github.com/mysql-otp/mysql-otp.git",
-       {ref,"6b089f9c273771310d3a491fa33de0c0eddf0a33"}},
+       {ref,"e5abc887d00b92daa438a1709e2b9b9ee07317bd"}},
   0},
  {<<"plists">>,
   {git,"https://github.com/silviucpp/plists.git",
