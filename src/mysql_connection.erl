@@ -5,21 +5,40 @@
 -define(UNKNOWN_PREPARE_STM, 1243).
 
 -export([
-    start_link/1, stop/1,
+    start_link/1,
+    stop/1,
 
-    query/2, query/3, query/4,
-    query_opt/3, query_opt/4, query_opt/5,
+    query/2,
+    query/3,
+    query/4,
+    query_opt/3,
+    query_opt/4,
+    query_opt/5,
 
-    p_query/3, p_query/4,
-    p_query_opt/4, p_query_opt/5,
+    p_query/3,
+    p_query/4,
+    p_query_opt/4,
+    p_query_opt/5,
 
-    execute/3, execute/4,
-    execute_opt/4, execute_opt/5,
+    execute/3,
+    execute/4,
+    execute_opt/4,
+    execute_opt/5,
 
-    transaction/2, transaction/3, transaction/4, in_transaction/1,
+    transaction/2,
+    transaction/3,
+    transaction/4,
+    in_transaction/1,
 
-    prepare/2, prepare/3, unprepare/2,
-    warning_count/1, affected_rows/1, autocommit/1, insert_id/1, encode/2
+    prepare/2,
+    prepare/3,
+    unprepare/2,
+
+    warning_count/1,
+    affected_rows/1,
+    autocommit/1,
+    insert_id/1,
+    encode/2
 ]).
 
 start_link(Options0) ->

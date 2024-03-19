@@ -30,7 +30,9 @@
     code_change/3
 ]).
 
--record(state, {app_pid}).
+-record(state, {
+    app_pid
+}).
 
 setup() ->
     ?ETS_CONNECTIONS_TABLE = ets:new(?ETS_CONNECTIONS_TABLE, [set, named_table, public, {read_concurrency, true}]),

@@ -9,6 +9,7 @@
 
 start(_StartType, _StartArgs) ->
     ok = mysql_connection_manager:setup(),
+
     case mysql_pool_sup:start_link(self()) of
         {ok, _} = Response ->
             case mysql_utils:env(pools) of
