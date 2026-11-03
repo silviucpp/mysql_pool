@@ -121,13 +121,11 @@ transaction(Conn, Fun, Retries) ->
     transaction(Conn, Fun, [], Retries).
 
 transaction(Conn, Fun, Args, Retries) ->
-    case catch mysql:transaction(Conn, Fun, Args, Retries) of
-        {atomic, _} = S ->
-            S;
-        {aborted, _} = A ->
-            A;
-        Error ->
-            ?LOG_ERROR("mysql:transaction unexpected response for connection: ~p error: ~p", [Conn, Error]),
+    try
+        mysql:transaction(Conn, Fun, Args, Retries)
+    catch
+        _:Error ->
+            ?LOG_ERROR("mysql:transaction failed for connection: ~p error: ~p", [Conn, Error]),
             stop(Conn),
             Error
     end.

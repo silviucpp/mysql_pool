@@ -48,19 +48,19 @@ dispose_pool(PoolName) ->
     gen_server:call(?MODULE, {dispose_pool, PoolName}).
 
 add_connection(Pid, PoolName) ->
-    case catch ets:insert(?ETS_CONNECTIONS_TABLE, {Pid, PoolName}) of
-        true ->
-            ok;
-        Error ->
+    try ets:insert(?ETS_CONNECTIONS_TABLE, {Pid, PoolName}) of
+        true -> ok
+    catch
+        _:Error ->
             ?LOG_ERROR("failed to add the pid: ~p in the connections table. error: ~p", [Pid, Error]),
             Error
     end.
 
 remove_connection(Pid) ->
-    case catch ets:delete(?ETS_CONNECTIONS_TABLE, Pid) of
-        true ->
-            ok;
-        Error ->
+    try ets:delete(?ETS_CONNECTIONS_TABLE, Pid) of
+        true -> ok
+    catch
+        _:Error ->
             ?LOG_ERROR("pid: ~p not found in the connections table error: ~p", [Pid, Error]),
             Error
     end.
@@ -70,10 +70,11 @@ map_connections(PoolName, Fun) ->
     plists:foreach(Fun, Pids, [{processes, schedulers}]).
 
 get_connection_pool(Pid) ->
-    case catch ets:lookup(?ETS_CONNECTIONS_TABLE, Pid) of
-        [{Pid, Poolname}] ->
-            {ok, Poolname};
-        Error ->
+    try ets:lookup(?ETS_CONNECTIONS_TABLE, Pid) of
+        [{Pid, Poolname}] -> {ok, Poolname};
+        [] -> []
+    catch
+        _:Error ->
             Error
     end.
 

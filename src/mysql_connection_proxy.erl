@@ -80,7 +80,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 get_connection(PoolName, Options) ->
     NewOptions = get_connection_options(PoolName, Options),
-    case catch mysql_connection:start_link(NewOptions) of
+    try mysql_connection:start_link(NewOptions) of
         {ok, Pid} ->
             case mysql_connection_manager:add_connection(Pid, PoolName) of
                 ok ->
@@ -91,6 +91,9 @@ get_connection(PoolName, Options) ->
             end;
         UnexpectedError ->
             {error, UnexpectedError}
+    catch
+        _:Error ->
+            {error, Error}
     end.
 
 get_connection_options(PoolName, Options) ->
